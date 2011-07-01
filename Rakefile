@@ -18,7 +18,7 @@ Jeweler::Tasks.new do |gem|
   gem.homepage = "http://github.com/timpalpant/bio-genomic-file"
   gem.license = "MIT"
   gem.summary = %Q{Work with genomic file formats in a consistent, simple and performant fashion}
-  gem.description = %Q{TODO: longer description of your gem}
+  gem.description = %Q{Allows iteration and querying of common genomic file formats, including Bed, BedGraph, GFF, Wiggle, and SAM/BAM}
   gem.email = "tim@palpant.us"
   gem.authors = ["timpalpant"]
   # dependencies defined in Gemfile
