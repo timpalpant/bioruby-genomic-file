@@ -2,6 +2,7 @@ require 'enumerator'
 require 'bio/utils/unix_file_utils'
 require 'bio/utils/tabix'
 require 'set'
+require 'fileutils'
 
 ##
 # A line-oriented data file
@@ -20,6 +21,7 @@ class EntryFile
     @data_file = File.expand_path(filename)
     raise EntryFileError, "Cannot find data file #{File.basename(@data_file)}. Does it exist?" if not File.exist?(@data_file)
     @index_file = File.expand_path(index_file) unless index_file.nil?
+    @indexing = @data_file + '.indexing'
   end
   
   # Perform any additional cleanup operations (deleting indexes, etc.)
@@ -124,6 +126,20 @@ class EntryFile
   def indexed?
     @index_file and File.exist?(@index_file)
   end
+
+  # Returns true if this file is currently being indexed by any process
+  def indexing?
+    File.exist?(@indexing)
+  end
+
+  # Flag this file as currently being indexed
+  def indexing=(b)
+    if b
+      FileUtils.touch(@indexing)
+    else
+      File.delete(@indexing) if File.exist?(@indexing)
+    end
+  end
   
   # Should be overridden in subclasses to parse an line into an object
   def parse(line)
@@ -152,6 +168,7 @@ class TextEntryFile < EntryFile
     @start_col = start_col
     @end_col = end_col
     
+    @filtered_file = @data_file + '.filtered'
     @sorted_file = @data_file + '.sorted'
     @bgzipped_file = @data_file + '.bgz'
     @index_file = @bgzipped_file + '.tbi'
@@ -177,7 +194,7 @@ class TextEntryFile < EntryFile
   private
   
   def bgzipped?
-    @bgzipped_file and File.exist?(@bgzipped_file)
+    File.exist?(@bgzipped_file)
   end
   
   def min_num_columns
@@ -214,38 +231,46 @@ class TextEntryFile < EntryFile
   
   # Index all TextEntryFiles with Tabix
   def index
-    begin
-      # Filter unparseable entries
-      # TODO: Find a more efficient way to filter unparseable entries without
-      # having to copy the entire file line by line
-      filtered_file = @data_file + '.filtered'
-      filtered = 0
-      File.open(filtered_file, 'w') do |f|
-        File.foreach(@data_file) do |line|
-          begin
-            parse(line)
-            f.write line
-          rescue
-            filtered += 0
+    # Block if this file is currently being indexed by another process
+    if indexing?
+      while indexing?
+      end
+    else
+      self.indexing = true
+      
+      begin
+        # Filter unparseable entries
+        # TODO: Find a more efficient way to filter unparseable entries without
+        # having to copy the entire file line by line
+        filtered = 0
+        File.open(@filtered_file, 'w') do |f|
+          File.foreach(@data_file) do |line|
+            begin
+              parse(line)
+              f.write line
+            rescue
+              filtered += 0
+            end
           end
         end
+        puts "Filtered #{filtered} unparseable entries" if filtered > 0 and ENV['DEBUG']
+        
+        # File must be sorted
+        File.sort(@filtered_file, @sorted_file, "-k#{@chr_col},#{@chr_col} -k#{@start_col},#{@start_col}n")
+        
+        # and BGZipped
+        BGZip.compress(@sorted_file, @bgzipped_file)
+                  
+        # Now Tabix can index it
+        Tabix.index(@bgzipped_file, @chr_col, @start_col, @end_col)
+      rescue
+        raise EntryFileError, "Error indexing file #{File.basename(@data_file)} for lookup!"
+      ensure
+        # Delete the temporary filtered and sorted files since they are unneeded
+        File.delete(@filtered_file) if File.exist?(@filtered_file)
+        File.delete(@sorted_file) if File.exist?(@sorted_file)
+        self.indexing = false
       end
-      puts "Filtered #{filtered} unparseable entries" if filtered > 0 and ENV['DEBUG']
-      
-      # File must be sorted
-      File.sort(filtered_file, @sorted_file, "-k#{@chr_col},#{@chr_col} -k#{@start_col},#{@start_col}n")
-      
-      # and BGZipped
-      BGZip.compress(@sorted_file, @bgzipped_file)
-                
-      # Now Tabix can index it
-      Tabix.index(@bgzipped_file, @chr_col, @start_col, @end_col)
-    rescue
-      raise EntryFileError, "Error indexing file #{File.basename(@data_file)} for lookup!"
-    ensure
-      # Delete the temporary filtered and sorted files
-      File.delete(filtered_file)
-      File.delete(@sorted_file)
     end
   end
 end
