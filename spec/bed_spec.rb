@@ -7,7 +7,7 @@
 #
 
 require 'spec_helper'
-require 'bed'
+require 'bio/db/bed'
 
 describe BedEntry do
   context "instantiated in code" do

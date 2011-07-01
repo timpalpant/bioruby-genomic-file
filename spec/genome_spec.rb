@@ -1,5 +1,5 @@
 require 'spec_helper'
-require 'genome'
+require 'bio/db/genome'
 
 describe Genome do
   TEST_2BIT = File.expand_path(File.dirname(__FILE__) + '/fixtures/test.2bit')

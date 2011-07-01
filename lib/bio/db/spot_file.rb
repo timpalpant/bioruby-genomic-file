@@ -1,6 +1,6 @@
-require 'unix_file_utils'
-require 'contig'
-require 'ucsc_tools'
+require 'bio/utils/unix_file_utils'
+require 'bio/genomics/contig'
+require 'bio/utils/ucsc_tools'
 
 ##
 # Additional methods mixed in for EntryFile types that also

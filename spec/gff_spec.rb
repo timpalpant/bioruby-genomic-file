@@ -7,7 +7,7 @@
 #
 
 require 'spec_helper'
-require 'gff'
+require 'bio/db/gff'
 
 describe GFFEntry do
   context "instantiated in code" do

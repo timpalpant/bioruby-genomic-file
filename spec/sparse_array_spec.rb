@@ -7,7 +7,7 @@
 #
 
 require 'spec_helper'
-require 'sparse_array'
+require 'bio/genomics/sparse_array'
 
 describe SparseArray do
   context "without data" do

@@ -1,5 +1,5 @@
 require 'bio'
-require 'genomic_interval'
+require 'bio/genomics/genomic_interval'
 
 ##
 # A genomic interval with an associated sequence (read)

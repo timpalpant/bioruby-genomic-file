@@ -1,5 +1,5 @@
-require 'fixed_precision'
-require 'sparse_array'
+require 'bio/utils/fixed_precision'
+require 'bio/genomics/sparse_array'
 
 ##
 # Represents a contiguous block of genomic data values

@@ -7,7 +7,7 @@
 #
 
 require 'spec_helper'
-require 'affy'
+require 'bio/db/affy'
 
 describe AffyFile do
   AFFY_FILE = File.expand_path(File.dirname(__FILE__) + '/fixtures/test.affy')

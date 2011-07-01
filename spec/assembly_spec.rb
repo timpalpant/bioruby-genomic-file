@@ -7,11 +7,7 @@
 #
 
 require 'spec_helper'
-require 'assembly'
-
-shared_examples "sacCer2 assembly" do
-  
-end
+require 'bio/db/assembly'
 
 describe Assembly do
   TEST_LEN_FILE = File.expand_path(File.dirname(__FILE__) + '/fixtures/test.len')

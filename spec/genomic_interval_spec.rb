@@ -1,5 +1,5 @@
 require 'spec_helper'
-require 'genomic_interval'
+require 'bio/genomics/genomic_interval'
 
 describe GenomicInterval do
   CHROM = 'chrI'

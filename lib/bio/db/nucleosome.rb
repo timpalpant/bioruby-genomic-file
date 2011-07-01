@@ -1,6 +1,6 @@
-require 'entry_file'
-require 'spot_file'
-require 'spot'
+require 'bio/db/entry_file'
+require 'bio/db/spot_file'
+require 'bio/genomics/spot'
 
 ##
 # Encapsulates information about an individual nucleosome

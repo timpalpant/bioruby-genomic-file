@@ -7,7 +7,7 @@
 #
 
 require 'spec_helper'
-require 'macs'
+require 'bio/db/macs'
 
 describe MACSEntry do
   context "parsed from a line" do

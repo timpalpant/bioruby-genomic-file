@@ -1,4 +1,4 @@
-require 'genomic_interval'
+require 'bio/genomics/genomic_interval'
 require 'stringio'
 
 ##

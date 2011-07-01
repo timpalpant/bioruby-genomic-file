@@ -7,7 +7,7 @@
 #
 
 require 'spec_helper'
-require 'wig'
+require 'bio/db/wig'
 
 TEST_WIG = File.expand_path(File.dirname(__FILE__) + '/fixtures/test.wig')
 TEST_BIGWIG = File.expand_path(File.dirname(__FILE__) + '/fixtures/test.bw')

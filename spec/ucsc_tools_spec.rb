@@ -7,7 +7,7 @@
 #
 
 require 'spec_helper'
-require 'ucsc_tools'
+require 'bio/utils/ucsc_tools'
 
 describe UCSCTrackHeader do  
   context "when instantiated in code" do

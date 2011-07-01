@@ -1,11 +1,11 @@
 require 'enumerator'
-require 'unix_file_utils'
-require 'parallelizer'
-require 'contig'
-require 'assembly'
+require 'bio/utils/unix_file_utils'
+require 'bio/utils/parallelizer'
+require 'bio/genomics/contig'
+require 'bio/db/assembly'
 require 'stringio'
-require 'wig_math'
-require 'ucsc_tools'
+require 'bio/db/wig_math'
+require 'bio/utils/ucsc_tools'
 
 class WigError < StandardError
 end

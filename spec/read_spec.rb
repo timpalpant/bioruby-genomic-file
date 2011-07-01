@@ -7,7 +7,7 @@
 #
 
 require 'spec_helper'
-require 'read'
+require 'bio/genomics/read'
 
 describe Read do
   before do

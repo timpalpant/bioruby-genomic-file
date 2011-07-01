@@ -1,6 +1,6 @@
 require 'enumerator'
-require 'unix_file_utils'
-require 'tabix'
+require 'bio/utils/unix_file_utils'
+require 'bio/utils/tabix'
 require 'set'
 
 ##

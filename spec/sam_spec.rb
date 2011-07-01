@@ -1,6 +1,5 @@
 require 'spec_helper'
-require 'sam'
-require 'bio'
+require 'bio/db/sam'
 
 describe SAMEntry do  
   context "single-end crick entry" do

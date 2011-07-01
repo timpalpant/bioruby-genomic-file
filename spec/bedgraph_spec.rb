@@ -7,7 +7,7 @@
 #
 
 require 'spec_helper'
-require 'bedgraph'
+require 'bio/db/bedgraph'
 
 describe BedGraphEntry do
   context "parsed from a line" do

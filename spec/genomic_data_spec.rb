@@ -1,5 +1,5 @@
 require 'spec_helper'
-require 'genomic_data'
+require 'bio/genomics/genomic_data'
 
 describe GenomicData do
   TEST_STR = 'my data'

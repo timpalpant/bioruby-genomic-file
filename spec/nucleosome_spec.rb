@@ -7,7 +7,7 @@
 #
 
 require 'spec_helper'
-require 'nucleosome'
+require 'bio/db/nucleosome'
 
 describe Nucleosome do
   context "instantiated in code" do

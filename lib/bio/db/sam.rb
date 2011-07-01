@@ -1,6 +1,6 @@
-require 'entry_file'
-require 'read_file'
-require 'read'
+require 'bio/db/entry_file'
+require 'bio/db/read_file'
+require 'bio/genomics/read'
 require 'stringio'
 
 # An entry in a SAM file

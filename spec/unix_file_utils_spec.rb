@@ -1,5 +1,5 @@
 require 'spec_helper'
-require 'unix_file_utils'
+require 'bio/utils/unix_file_utils'
 require 'fileutils'
 
 describe File do

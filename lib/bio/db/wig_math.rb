@@ -1,4 +1,4 @@
-require 'stats'
+require 'bio/stats'
 
 ##
 # Sugar for computing basic statistics on Wig files

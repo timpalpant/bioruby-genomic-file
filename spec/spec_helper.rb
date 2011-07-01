@@ -1,4 +1,5 @@
 require 'rspec'
+require 'bio-genomic-file'
 #require 'simplecov'
 
 #SimpleCov.start do

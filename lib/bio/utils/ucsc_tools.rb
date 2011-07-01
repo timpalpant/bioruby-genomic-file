@@ -1,5 +1,5 @@
-require 'unix_file_utils'
 require 'bio'
+require 'bio/utils/unix_file_utils'
 require 'stringio'
 
 ##

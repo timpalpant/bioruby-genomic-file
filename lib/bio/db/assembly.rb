@@ -6,7 +6,7 @@
 #  Copyright 2011 UNC. All rights reserved.
 #
 
-require 'genomic_data'
+require 'bio/genomics/genomic_data'
 
 class Assembly < GenomicData  
   attr_reader :name, :len_file

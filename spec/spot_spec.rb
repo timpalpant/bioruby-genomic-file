@@ -7,7 +7,7 @@
 #
 
 require 'spec_helper'
-require 'spot'
+require 'bio/genomics/spot'
 
 describe Spot do  
   context "with an ID" do
