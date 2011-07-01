@@ -180,6 +180,19 @@ class TextEntryFile < EntryFile
     @bgzipped_file and File.exist?(@bgzipped_file)
   end
   
+  def min_num_columns
+    # Cache for performance
+    @min_num_columns = [@chr_col, @start_col, @end_col].max if @min_num_columns.nil?
+    return @min_num_columns
+  end
+  
+  # By default, just parse intervals
+  def parse(line)
+    entry = line.chomp.split("\t")
+    raise EntryFileError, "Invalid interval entry" if entry.length < min_num_columns
+    GenomicInterval.new(entry[@chr_col-1], entry[@start_col-1].to_i, entry[@stop_col-1].to_i)
+  end
+  
   # Get all lines in the file matching chr:start-stop
   def query_lines(chr = nil, start = nil, stop = nil)
     raise EntryFileError, "Tabix only supports queries with start AND stop" if start and stop.nil?
