@@ -2,7 +2,7 @@
 require 'bio'
 require 'forkmanager'
 
-# Classes
+# File classes
 require 'bio/db/affy'
 require 'bio/db/assembly'
 require 'bio/db/bed'

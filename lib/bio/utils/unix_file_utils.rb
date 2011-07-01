@@ -162,4 +162,8 @@ class File
   def self.sort(input_file, output_file, options)
     %x[ sort #{options} -o #{output_file} #{input_file} ]
   end
+  
+  def self.diff(file1, file2)
+    %x[ diff #{File.expand_path(file1)} #{File.expand_path(file2)} ].split("\n")
+  end
 end

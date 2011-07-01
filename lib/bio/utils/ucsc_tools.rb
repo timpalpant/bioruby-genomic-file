@@ -11,7 +11,7 @@ module UCSCTools
   end
   
   def self.bedgraph_to_bigwig(input_file, assembly_file, output_file)
-    %x[ bedGraphToBigWig #{File.expand_path(input_sorted)} #{File.expand_path(assembly_file)} #{File.expand_path(output_file)} ]
+    %x[ bedGraphToBigWig #{File.expand_path(input_file)} #{File.expand_path(assembly_file)} #{File.expand_path(output_file)} ]
   end
   
   def self.bed_to_bigbed

@@ -2,6 +2,43 @@
 
 Description goes here.
 
+=== External Requirements
+
+=== Required Gems
+
+The easiest way to get set up is to use bundler:
+
+  $ sudo gem1.9 install bundler
+
+=== Setup
+
+== As a Gem
+
+Install with RubyGems:
+
+  $ gem install bio-genomic-file
+  
+or add to your project's Bundler Gemfile:
+
+  $ gem 'bio-genomic-file', :git => git://github.com/timpalpant/Ruby-Genomics.git
+
+== For Development
+
+Checkout the source tree with git:
+
+  $ git clone git://github.com/timpalpant/Ruby-Genomics.git
+
+Use bundler to install the rest of the requirements:
+
+  $ cd Ruby-Genomics
+  $ bundle install
+
+Run the specs to ensure that everything is set up correctly:
+
+  $ rake1.9
+  
+=== Examples
+
 == Contributing to bio-genomic-file
  
 * Check out the latest master to make sure the feature hasn't been implemented or the bug hasn't been fixed yet
