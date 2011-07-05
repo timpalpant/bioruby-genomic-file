@@ -3,7 +3,7 @@ require 'fileutils'
 # Encapsulate methods in the File class 
 # that call native Unix command-line utilities
 # such as wc, grep, head, tail...
-class File  
+class File
   # Get the number of lines in a file using wc -l
   def self.num_lines(filename)
     if File.directory?(filename)
@@ -29,11 +29,30 @@ class File
     %x[ wc -w #{filename} ].split(' ').first.to_i
   end
   
+  # Returns whether or not +file+ is a binary file.  Note that this is
+  # not guaranteed to be 100% accurate.  It performs a "best guess" based
+  # on a simple test of the first +File.blksize+ characters.
+  #
+  # Example:
+  #
+  #   File.binary?('somefile.exe') # => true
+  #   File.binary?('somefile.txt') # => false
+  #--
+  # Based on code originally provided by Ryan Davis (which, in turn, is
+  # based on Perl's -B switch).
+  #
+  # Adapted from ptools gem
+  #
+  def self.binary?(file)
+    s = (File.read(file, File.stat(file).blksize) || "").split(//)
+    ((s.size - s.grep(" ".."~").size) / s.size.to_f) > 0.30
+  end
+  
   # Return an array of strings resulting from the output of grep -v
   # Alternatively, get all lines and then use Array#select
   # Takes an optional block
-  def self.inverse_grep(filename, search_str, &block)
-    if block
+  def self.inverse_grep(filename, search_str)
+    if block_given?
       IO.popen("grep -v -w '#{search_str}' #{filename}") do |output|
         output.each { |line| yield line }
       end
@@ -43,8 +62,8 @@ class File
   end
   
   # Return an array of strings resulting from the output of grep -n
-  def self.grep_with_linenum(filename, search_str, &block)
-    if block
+  def self.grep_with_linenum(filename, search_str)
+    if block_given?
       IO.popen("grep -n -w '#{search_str}' #{filename}") do |output|
         output.each do |line|
           entry = line.split(':')
@@ -64,8 +83,8 @@ class File
   end
   
   # Return an array of strings resulting from the output of grep
-  def self.grep(filename, search_str, &block)
-    if block
+  def self.grep(filename, search_str)
+    if block_given?
       IO.popen("grep -w '#{search_str}' #{filename}") do |output|
         output.each { |line| yield line }
       end
@@ -74,64 +93,122 @@ class File
     end
   end
   
-  # Get lines m..n of a file using tail and head
-  def self.lines(filename, start_line, end_line = nil, &block)
-    raise "Cannot get lines < 1 from file!" if start_line < 1
-
-    if end_line.nil?  # Read to EOF
-      if block
-        IO.popen("tail -n+#{start_line} #{filename}") do |output|
-          output.each { |line| yield line }
-        end
-      else
-        return %x[ tail -n+#{start_line} #{filename} ].split("\n")
+  # Get lines m..n of a file
+  def self.lines(filename, start_line, end_line)
+    buffer = 4096
+    count = 0
+    lines = Array.new
+    
+    File.open(filename) do |f|
+      while count < start_line and 
+        chunk = f.read(buffer)
+        raise "There are only #{count} lines in #{File.basename(filename)}! (cannot get #{start_line}..#{end_line})" if chunk.nil?
+        lines_in_chunk = chunk.count("\n")
+        count += lines_in_chunk
       end
-    else  # Read a specific number of lines
-      num_lines = end_line - start_line + 1
-      if block
-        IO.popen("tail -n+#{start_line} #{filename} 2>&1 | head -n #{num_lines}") do |output|
-          output.each { |line| yield line }
+      
+      # Move back one chunk
+      idx = [f.pos - buffer, 0].max
+      f.seek(idx)
+      # Move to the next line unless we're at the beginning of the file
+      f.gets unless idx == 0
+      line_num = count - lines_in_chunk
+      
+      while line_num < end_line
+        line = f.gets
+        line_num += 1
+        raise "There are only #{line_num} lines lines in #{File.basename(filename)}! (cannot get #{start_line}..#{end_line})" if line.nil?
+        next if line_num < start_line
+        
+        if block_given?
+          yield line
+        else
+          lines << line.chomp
         end
-      else
-        return %x[ tail -n+#{start_line} #{filename} 2>&1 | head -n #{num_lines} ].split("\n")
-        # Seems to be much slower
-        #%x[ sed -n '#{start_line},#{end_line}p; #{end_line+1}q' #{filename} ].split("\n")
       end
     end
+
+    return lines unless lines.length == 0
   end
   
-  # Get the first n lines of a file using head
-  def self.head(filename, num_lines, &block)
-    if block
-      IO.popen("head -n #{num_lines} #{filename}") do |output|
-        output.each { |line| yield line }
+  # Get the first n lines of a file
+  def self.head(filename, num_lines)
+    return if num_lines <= 0
+    
+    count = 0
+    lines = Array.new
+    File.foreach(filename) do |line|
+      if block_given?
+        yield line
+      else
+        lines << line.chomp
       end
-    else
-      return %x[ head -n #{num_lines} #{filename} ].split("\n")
+      
+      count += 1
+      break if count == num_lines
     end
+    
+    return lines unless lines.length == 0
   end
-  
-  # Get the bottom n lines of a file using tail
-  def self.tail(filename, num_lines, &block)
-    if block
-      IO.popen("tail -n#{num_lines} #{filename}") do |output|
-        output.each { |line| yield line }
-      end
-    else
-      return %x[ tail -n #{num_lines} #{filename} ].split("\n")
-    end
-  end
+    
+  # Get the last n lines of a file
+  def self.tail(filename, num_lines)
+    return if num_lines <= 0
+    chunks = Array.new
+    
+    File.open(filename) do |f|
+      buffer = 4096
+      idx = [f.size - buffer, 0].max
+      count = 0
 
-  # GZip a file
-  def self.gzip(filename)
-    %x[ gzip #{filename} ]
+      begin
+        # Seek to the desired position and read a chunk
+        f.seek(idx)
+        chunk = f.read(buffer)
+        
+        # Count the number of lines in the chunk
+        count += chunk.count("\n")
+        
+        # If we're returning an Array of lines,
+        # store the chunks now so we don't have to re-read them
+        chunks.unshift(chunk) unless block_given?
+        
+        # Move to the next chunk
+        idx -= buffer
+      end while count < num_lines and f.pos > 0
+    
+      if block_given?
+        skip = [count - num_lines, 0].max
+        i = 0
+        f.seek(idx+buffer)
+        f.each_line do |line|
+          yield line unless i <= skip
+          i += 1
+        end
+      else
+        return chunks.join.lines.reverse_each.take(num_lines).reverse
+      end
+    end
   end
 
   # Find the location of an executable in the $PATH
   def self.which(cmd)
-    result = %x[ which #{cmd} ].chomp
-    return nil if result.empty?
-    return result
+    # Use which command if it's available
+    if has_which?
+      result = %x[ which #{cmd} ].chomp
+      return nil if result.empty?
+      return result
+    # Otherwise, search through the $PATH manually
+    else
+      exts = ENV['PATHEXT'] ? ENV['PATHEXT'].split(';') : ['']
+      ENV['PATH'].split(File::PATH_SEPARATOR).each do |path|
+        exts.each do |ext|
+          exe = "#{path}/#{cmd}#{ext}"
+          return exe if File.executable?(exe)
+        end
+      end
+      return nil
+    end
   end
 
   # Add a newline to the end of a file only if there isn't one already
@@ -148,8 +225,8 @@ class File
 
     temp_files = input_files[0..-2].map { |f| f+'.tmp' }
     begin
-      # Add newlines at the end of files 0..-2 if they don't have them
-      input_files[0..-2].each { |f| File.newlinify(f, f+'.tmp') }
+      # Add newlines at the end of files if they don't have them
+      input_files[0..-2].each_index { |i| File.newlinify(input_files[i], temp_files[i]) }
 
       # Cat all of the files together
       %x[ cat #{temp_files.join(' ')} #{input_files.last} > #{output_file} ]
@@ -163,7 +240,34 @@ class File
     %x[ sort #{options} -o #{output_file} #{input_file} ]
   end
   
+  # Diff two files
   def self.diff(file1, file2)
     %x[ diff #{File.expand_path(file1)} #{File.expand_path(file2)} ].split("\n")
+  end
+  
+  ##
+  # HELPER METHODS
+  ##
+  
+  private
+  
+  # Look for which executable in the $PATH
+  def self.has_which?
+    # Cache for performance
+    if not defined? @@has_which
+      @@has_which = false
+      exts = ENV['PATHEXT'] ? ENV['PATHEXT'].split(';') : ['']
+      ENV['PATH'].split(File::PATH_SEPARATOR).each do |path|
+        exts.each do |ext|
+          exe = "#{path}/which#{ext}"
+          if File.executable?(exe)
+            @@has_which = true
+            return @@has_which
+          end
+        end
+      end
+    end
+    
+    return @@has_which
   end
 end

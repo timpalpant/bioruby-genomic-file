@@ -188,8 +188,21 @@ class BAMFile < BinaryEntryFile
   
   # Index sorted alignment for fast random access. Index file <aln.bam>.bai will be created.
   def index
-    puts "Generating index for BAM file #{File.basename(@data_file)}" if ENV['DEBUG']
-    %x[ samtools index #{@data_file} ]
+    # Block if this file is being indexed by another thread/process
+    if indexing?
+      while indexing?
+      end
+    else
+      begin
+        self.indexing = true
+        puts "Generating index for BAM file #{File.basename(@data_file)}" if ENV['DEBUG']
+        %x[ samtools index #{@data_file} ]
+      rescue
+        raise SAMError, "Error generating index for BAM file #{File.basename(@data_file)}!"
+      ensure
+        self.indexing = false
+      end
+    end
   end
   
   def parse(line)

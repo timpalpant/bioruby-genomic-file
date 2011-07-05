@@ -3,6 +3,7 @@ require 'bio/utils/unix_file_utils'
 require 'bio/utils/tabix'
 require 'set'
 require 'fileutils'
+require 'bio/db/entry_file_sniffer'
 
 ##
 # A line-oriented data file
@@ -27,13 +28,14 @@ class EntryFile
   # Perform any additional cleanup operations (deleting indexes, etc.)
   def close
     File.delete(@index_file) if indexed?
+    File.delete(@indexing) if indexing?
   end
   
   # Open the EntryFile (optionally with a block)
-  def self.open(filename, &block)
+  def self.open(filename)
     entry_file = self.new(filename)
     
-    if block
+    if block_given?
       yield entry_file
       entry_file.close
     else
@@ -43,14 +45,8 @@ class EntryFile
 
   # Autodetect a file format
   def self.autodetect(filename, &block)
-    # TODO: Better filetype sniffing
-
-    if block
-      yield entry_file
-      entry_file.close
-    else
-      return entry_file
-    end
+    clazz = EntryFileSniffer.sniff(filename)
+    clazz.open(filename, &block)
   end
   
   # Iterate over each of the entries in an EntryFile
@@ -243,7 +239,7 @@ class TextEntryFile < EntryFile
   
   # Index all TextEntryFiles with Tabix
   def index
-    # Block if this file is currently being indexed by another process
+    # Block if this file is currently being indexed by another thread/process
     if indexing?
       while indexing?
       end

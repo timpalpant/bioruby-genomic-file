@@ -39,6 +39,12 @@ Run the specs to ensure that everything is set up correctly:
   
 === Examples
 
+=== To-Do
+
+* Check for external dependencies during install and warn/error if they cannot be found
+* Auto-sniff filetypes
+* Make cross-platform by rewriting UnixFileUtils
+
 == Contributing to bio-genomic-file
  
 * Check out the latest master to make sure the feature hasn't been implemented or the bug hasn't been fixed yet

@@ -35,16 +35,25 @@ class AbstractWigFile
   end
   
   # Open a Wig file with an optional block
-  def self.open(filename, &block)
+  def self.open(filename)
     wig = self.new(filename)
   
-    if block
+    if block_given?
       yield wig
     else
       return wig
     end
     
     wig.close
+  end
+  
+  # Autodetect whether this is a Wig or BigWig, and return the correct one
+  def self.autodetect(filename, &block)
+    if File.binary?(filename)
+      BigWigFile.open(filename, &block)
+    else
+      WigFile.open(filename, &block)
+    end
   end
   
   # Enumerate over the contigs in this Wig file

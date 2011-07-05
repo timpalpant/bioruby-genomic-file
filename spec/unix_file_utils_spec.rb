@@ -63,7 +63,8 @@ describe File do
     File.lines(FILE_UTILS1, 6, 8).length.should == 3
     File.lines(FILE_UTILS1, 2, 2).length.should == 1
     File.lines(FILE_UTILS1, 2, 2).first.should == "chrI	100	95	Spot2	13.2"
-    File.lines(FILE_UTILS1, 10).length.should == 4
+    File.lines(FILE_UTILS1, 2, 8).first.should == "chrI	100	95	Spot2	13.2"
+    File.lines(FILE_UTILS1, 2, 8).last.should == "chrIV	0	12	Spot7	12	+"
     
     count = 0
     File.lines(FILE_UTILS1, 6, 7) { |line| count += 1 }
@@ -71,36 +72,35 @@ describe File do
   end
   
   it "should retrieve lines from the start of a file" do
-    File.head(FILE_UTILS1, 5).length.should == 5
+    File.head(FILE_UTILS1, 3).length.should == 3
     
     count = 0
     File.head(FILE_UTILS1, 5) { |line| count += 1 }
     count.should == 5
+    
+    File.head(FILE_UTILS1, 5).last.chomp.should == "illegal entry"
+    
+    last_line = String.new
+    File.head(FILE_UTILS1, 5) { |line| last_line = line }
+    last_line.chomp.should == "illegal entry"
   end
   
   it "should retrieve lines from the end of a file" do
     File.tail(FILE_UTILS1, 3).length.should == 3
     
     count = 0
-    File.head(FILE_UTILS1, 3) { |line| count += 1 }
-    count.should == 3
-  end
-  
-  it "should gzip files" do
-    gzipped = FILE_UTILS1 + '.gz'
-    backup = FILE_UTILS1 + '.backup'
-    begin
-      FileUtils.copy(FILE_UTILS1, backup)
-      File.gzip(FILE_UTILS1)
-      File.exist?(gzipped).should be_true
-    ensure
-      FileUtils.move(backup, FILE_UTILS1)
-      File.delete(gzipped) if File.exist?(gzipped)
+    File.tail(FILE_UTILS1, 5) { |line| count += 1 }
+    count.should == 5
+    
+    File.tail(FILE_UTILS1, 5).first.chomp.should == "chrIV	1	10	Spot8	1.0	-"
+    
+    first_line = String.new
+    count = 0
+    File.tail(FILE_UTILS1, 5) do |line| 
+      first_line = line if count == 0
+      count += 1
     end
-  end
-  
-  it "should find the location of an executable in the $PATH" do
-    File.which('gzip').end_with?('gzip').should be_true
+    first_line.chomp.should == "chrIV	1	10	Spot8	1.0	-"
   end
   
   it "should return nil if an executable cannot be found in the $PATH" do
