@@ -40,6 +40,18 @@ class EntryFile
       return entry_file
     end
   end
+
+  # Autodetect a file format
+  def self.autodetect(filename, &block)
+    # TODO: Better filetype sniffing
+
+    if block
+      yield entry_file
+      entry_file.close
+    else
+      return entry_file
+    end
+  end
   
   # Iterate over each of the entries in an EntryFile
   def self.foreach(filename, chr = nil, start = nil, stop = nil)
