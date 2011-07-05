@@ -102,6 +102,16 @@ shared_examples "wig file" do
   end
 end
 
+describe WigFile do
+  it "should autodetect ASCII (text) formatted files" do
+    WigFile.autodetect(TEST_WIG).is_a?(TextWigFile).should be_true
+  end
+  
+  it "should autodetect binary (BigWig) formatted files" do
+    WigFile.autodetect(TEST_BIGWIG).is_a?(BigWigFile).should be_true
+  end
+end
+
 describe BigWigFile do
   before do
     @test = BigWigFile.new(TEST_BIGWIG)
@@ -132,7 +142,7 @@ describe BigWigFile do
   it "should output to Wig"
 end
 
-describe WigFile do
+describe TextWigFile do
   before do
     @test = WigFile.new(TEST_WIG)
   end

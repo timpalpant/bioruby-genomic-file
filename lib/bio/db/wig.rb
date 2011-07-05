@@ -11,9 +11,9 @@ class WigError < StandardError
 end
 
 ##
-# Base class for WigFile and BigWigFile
+# Base class for TextWigFile and BigWigFile
 ##
-class AbstractWigFile
+class WigFile
   include Enumerable
   include WigMath
   
@@ -52,7 +52,7 @@ class AbstractWigFile
     if File.binary?(filename)
       BigWigFile.open(filename, &block)
     else
-      WigFile.open(filename, &block)
+      TextWigFile.open(filename, &block)
     end
   end
   
@@ -199,7 +199,7 @@ end
 # For documentation, see: http://genome.ucsc.edu/goldenPath/help/bigWig.html
 # Analogous to WigFile, but for compressed BigWigs
 ##
-class BigWigFile < AbstractWigFile  
+class BigWigFile < WigFile  
   attr_reader :min, :max
 
   def initialize(filename)
@@ -235,7 +235,7 @@ class BigWigFile < AbstractWigFile
     # Convert the output Wig file to BigWig
     tmp_file = output_file + '.tmp'
     begin
-      WigFile.to_bigwig(output_file, tmp_file, assembly)
+      TextWigFile.to_bigwig(output_file, tmp_file, assembly)
     
       # Delete the temporary intermediate Wig file by moving the BigWig on top of it
       FileUtils.move(tmp_file, output_file)
@@ -387,7 +387,7 @@ end
 ##
 # An ASCII text Wiggle file
 ##
-class WigFile < AbstractWigFile
+class TextWigFile < WigFile
   # Open a Wig file and parse its track/contig information
   def initialize(filename)
     super(filename)
@@ -534,14 +534,14 @@ class WigFile < AbstractWigFile
   # OUTPUT METHODS
   ##
   
-  # Convert this WigFile to a BigWigFile
+  # Convert this TextWigFile to a BigWigFile
   def to_bigwig(output_file, assembly)
-    WigFile.to_bigwig(@datafile, output_file, assembly)
+    TextWigFile.to_bigwig(@datafile, output_file, assembly)
   end
 
   # Convert this WigFile to a BedGraph
   def to_bedgraph(output_file)
-    WigFile.to_bedgraph(@datafile, output_file)
+    TextWigFile.to_bedgraph(@datafile, output_file)
   end
   
   # For converting wigs to BigWigs without having to load (index them) first

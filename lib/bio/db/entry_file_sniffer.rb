@@ -33,10 +33,8 @@ class EntryFileSniffer
       SAMFile
     elsif bam?
       BAMFile
-    elsif binary?
-      BinaryEntryFile
     else
-      TextEntryFile
+      raise EntryFileSnifferError, "Could not auto-detect file type!"
     end
   end
   
@@ -51,6 +49,7 @@ class EntryFileSniffer
   
   def bed?
     return false if binary?
+    return false if num_columns < 3 or num_columns > 12
     
     begin
       BedEntry.parse(first_line)
@@ -63,6 +62,7 @@ class EntryFileSniffer
   
   def bedgraph?
     return false if binary?
+    return false if num_columns != 4
     
     begin
       BedGraphEntry.parse(first_line)
@@ -75,6 +75,7 @@ class EntryFileSniffer
   
   def sam?
     return false if binary?
+    return false if num_columns != 11
     
     begin
       SAMEntry.parse(first_line)
@@ -103,6 +104,15 @@ class EntryFileSniffer
     end
     
     return @first_line
+  end
+  
+  # The number of columns in the file
+  def num_columns
+    if not defined? @num_cols
+      @num_cols = first_line.split("\t").length
+    end
+    
+    return @num_cols
   end
 end
 
