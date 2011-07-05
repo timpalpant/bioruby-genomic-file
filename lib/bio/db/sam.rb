@@ -191,6 +191,7 @@ class BAMFile < BinaryEntryFile
     # Block if this file is being indexed by another thread/process
     if indexing?
       while indexing?
+        sleep 1
       end
     else
       begin

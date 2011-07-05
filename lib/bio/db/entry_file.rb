@@ -242,6 +242,7 @@ class TextEntryFile < EntryFile
     # Block if this file is currently being indexed by another thread/process
     if indexing?
       while indexing?
+        sleep 1
       end
     else
       self.indexing = true
