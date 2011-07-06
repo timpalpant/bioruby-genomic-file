@@ -1,6 +1,6 @@
 require 'bio/db/assembly'
 require 'bio/utils/ucsc_tools'
-require 'bio/stats'
+require 'stats'
 require 'enumerator'
 
 ##

@@ -1,4 +1,4 @@
-require 'bio/utils/unix_file_utils'
+require 'utils/unix'
 require 'bio/genomics/contig'
 require 'bio/utils/ucsc_tools'
 

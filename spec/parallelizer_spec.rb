@@ -7,7 +7,7 @@
 #
 
 require 'spec_helper'
-require 'bio/utils/parallelizer'
+require 'utils/parallelizer'
 
 describe Enumerable do
   before do

@@ -11,7 +11,7 @@
 #  that allows us to flexibly change implementation details to optimize performance without affecting other classes
 
 require 'enumerator'
-require 'bio/stats'
+require 'stats'
 
 class SparseArray
   include Enumerable

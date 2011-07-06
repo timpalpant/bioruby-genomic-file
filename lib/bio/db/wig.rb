@@ -1,9 +1,9 @@
 require 'enumerator'
-require 'bio/utils/unix_file_utils'
-require 'bio/utils/parallelizer'
+require 'stringio'
+require 'utils/unix'
+require 'utils/parallelizer'
 require 'bio/genomics/contig'
 require 'bio/db/assembly'
-require 'stringio'
 require 'bio/db/wig_math'
 require 'bio/utils/ucsc_tools'
 

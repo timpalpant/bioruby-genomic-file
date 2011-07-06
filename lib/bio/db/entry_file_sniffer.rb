@@ -8,7 +8,8 @@
 #  Copyright 2011 UNC. All rights reserved.
 #
 
-require 'bio/utils/unix_file_utils'
+require 'utils/unix'
+require 'utils/numeric'
 
 class EntryFileSniffer
   def initialize(filename)
@@ -50,6 +51,10 @@ class EntryFileSniffer
   def bed?
     return false if binary?
     return false if num_columns < 3 or num_columns > 12
+    # Columns 2-3 must be integers (genomic coordinates)
+    return false unless column(2).integer? and column(3).integer?
+    # Assume BedGraph if there are 4 columns and the 4th is numeric
+    return false if num_columns == 4 and column(4).numeric?
     
     begin
       BedEntry.parse(first_line)
@@ -63,6 +68,10 @@ class EntryFileSniffer
   def bedgraph?
     return false if binary?
     return false if num_columns != 4
+    # Columns 2-3 must be integers (genomic coordinates)
+    return false unless column(2).integer? and column(3).integer?
+    # Column 4 must be a numeric value
+    return false unless column(4).numeric?
     
     begin
       BedGraphEntry.parse(first_line)
@@ -75,15 +84,17 @@ class EntryFileSniffer
   
   def sam?
     return false if binary?
-    return false if num_columns != 11
+    return false if num_columns < 11
+    # Column 4 must be an integer (genomic coordinate)
+    return false unless column(4).integer?
     
     begin
       SAMEntry.parse(first_line)
     rescue
-      return true
+      return false
     end
     
-    return false
+    return true
   end
   
   def bam?
@@ -98,8 +109,11 @@ class EntryFileSniffer
   # Get the first line of the file for sniffing
   def first_line
     if not defined? @first_line
-      File.open(@data_file) do |f|
-        @first_line = f.gets.chomp
+      File.foreach(@data_file) do |line|
+        @first_line = line
+        
+        # Break as long as we don't have a header/track/comment line
+        break if not @first_line.start_with?('#', '@', 'track') and not @first_line.empty?
       end
     end
     
@@ -113,6 +127,11 @@ class EntryFileSniffer
     end
     
     return @num_cols
+  end
+  
+  # Get the nth column of the first line
+  def column(n)
+    first_line.split("\t")[n-1]
   end
 end
 

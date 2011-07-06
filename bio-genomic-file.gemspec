@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{bio-genomic-file}
-  s.version = "0.1.0"
+  s.version = "0.1.2"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["timpalpant"]
-  s.date = %q{2011-07-05}
+  s.date = %q{2011-07-06}
   s.description = %q{Allows iteration and querying of common genomic file formats, including Bed, BedGraph, GFF, Wiggle, and SAM/BAM}
   s.email = %q{tim@palpant.us}
   s.extra_rdoc_files = [
@@ -48,19 +48,16 @@ Gem::Specification.new do |s|
     "lib/bio/genomics/genomic_index_error.rb",
     "lib/bio/genomics/genomic_interval.rb",
     "lib/bio/genomics/read.rb",
-    "lib/bio/genomics/sparse_array.rb",
     "lib/bio/genomics/spot.rb",
-    "lib/bio/stats.rb",
-    "lib/bio/utils/fixed_precision.rb",
-    "lib/bio/utils/parallelizer.rb",
+    "lib/bio/utils/samtools.rb",
     "lib/bio/utils/tabix.rb",
     "lib/bio/utils/ucsc_tools.rb",
-    "lib/bio/utils/unix_file_utils.rb",
     "spec/affy_spec.rb",
     "spec/assembly_spec.rb",
     "spec/bed_spec.rb",
     "spec/bedgraph_spec.rb",
     "spec/contig_spec.rb",
+    "spec/entry_file_sniffer_spec.rb",
     "spec/fixed_precision_spec.rb",
     "spec/fixtures/test.2bit",
     "spec/fixtures/test.affy",
@@ -92,7 +89,6 @@ Gem::Specification.new do |s|
     "spec/spot_spec.rb",
     "spec/stats_spec.rb",
     "spec/ucsc_tools_spec.rb",
-    "spec/unix_file_utils_spec.rb",
     "spec/wig_spec.rb"
   ]
   s.homepage = %q{http://github.com/timpalpant/bio-genomic-file}

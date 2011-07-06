@@ -1,5 +1,5 @@
 require 'spec_helper'
-require 'bio/utils/fixed_precision'
+require 'utils/fixed_precision'
 
 describe Float do
   before do

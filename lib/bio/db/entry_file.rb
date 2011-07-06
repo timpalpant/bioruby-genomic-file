@@ -1,8 +1,8 @@
 require 'enumerator'
-require 'bio/utils/unix_file_utils'
-require 'bio/utils/tabix'
 require 'set'
 require 'fileutils'
+require 'utils/unix'
+require 'bio/utils/tabix'
 require 'bio/db/entry_file_sniffer'
 
 ##

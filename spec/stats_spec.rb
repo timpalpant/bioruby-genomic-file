@@ -7,7 +7,7 @@
 #
 
 require 'spec_helper'
-require 'bio/stats'
+require 'stats'
 
 describe Array, "that is empty" do
   before do
