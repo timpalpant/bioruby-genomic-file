@@ -284,27 +284,7 @@ class TextEntryFile < EntryFile
   end
 end
 
-class BinaryEntryFile < EntryFile  
-  private
-  
-  # Query the binary file and return the resulting text-entry lines
-  def query_lines(chr, start, stop)
-    index() if not indexed?
-    
-    IO.popen(query_command(chr, start, stop)) do |output|
-      output.each { |line| yield line }
-    end
-  end
-  
-  # Should be overridden in subclasses to construct the query command
-  def query_command(chr = nil, start = nil, stop = nil)
-    raise "Do not know how to query binary file #{File.basename(@data_file)}"
-  end
-  
-  # Should be overridden in subclasses
-  def index
-    raise EntryFileError, "Do not know how to index binary file #{File.basename(@data_file)}"
-  end
+class BinaryEntryFile < EntryFile
 end
 
 class EntryFileError < StandardError

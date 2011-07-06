@@ -144,7 +144,7 @@ end
 
 describe TextWigFile do
   before do
-    @test = WigFile.new(TEST_WIG)
+    @test = TextWigFile.new(TEST_WIG)
   end
   
   after do

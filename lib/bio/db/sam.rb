@@ -1,6 +1,7 @@
 require 'bio/db/entry_file'
 require 'bio/db/read_file'
 require 'bio/genomics/read'
+require 'bio/utils/samtools'
 require 'stringio'
 
 # An entry in a SAM file
@@ -162,7 +163,7 @@ class BAMFile < BinaryEntryFile
   # Count the number of alignments in a given lookup
   def count(chr = nil, start = nil, stop = nil)
     index() if not indexed?
-    %x[ samtools view -c #{@data_file} #{query_string(chr, start, stop)} ].chomp.to_i
+    SAMTools.count(@data_file, chr, start, stop)
   end
   
   # Use samtools to get the chromosomes efficiently
@@ -171,7 +172,7 @@ class BAMFile < BinaryEntryFile
     if @chromosomes.nil?
       index() if not indexed?
       @chromosomes = Array.new
-      %x[ samtools idxstats #{@data_file} ].split("\n").each do |line| 
+      SAMTools.idxstats(@data_file).each do |line| 
         entry = line.chomp.split("\t")
         chr = entry[0]
         bases = entry[1].to_i
@@ -196,8 +197,7 @@ class BAMFile < BinaryEntryFile
     else
       begin
         self.indexing = true
-        puts "Generating index for BAM file #{File.basename(@data_file)}" if ENV['DEBUG']
-        %x[ samtools index #{@data_file} ]
+        SAMTools.index(@data_file)
       rescue
         raise SAMError, "Error generating index for BAM file #{File.basename(@data_file)}!"
       ensure
@@ -206,22 +206,13 @@ class BAMFile < BinaryEntryFile
     end
   end
   
-  def parse(line)
-    SAMEntry.parse(line)
+  def query_lines(chr = nil, start = nil, stop = nil, &block)
+    index() if not indexed?
+    SAMTools.view(@data_file, chr, start, stop, &block)
   end
   
-  # Define how to query BAM files for lines
-  def query_command(chr = nil, start = nil, stop = nil)
-    "samtools view #{@data_file} #{query_string(chr, start, stop)}"
-  end
-
-  def query_string(chr = nil, start = nil, stop = nil)
-    query = StringIO.new
-    query << chr.to_s if chr
-    query << ':' << start.to_s if start
-    query << '-' << stop.to_s if stop
-
-    return query.string
+  def parse(line)
+    SAMEntry.parse(line)
   end
 end
 
