@@ -1,6 +1,5 @@
 # External gems
 require 'bio'
-require 'forkmanager'
 
 # File classes
 require 'bio/db/affy'

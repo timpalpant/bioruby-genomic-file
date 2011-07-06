@@ -9,6 +9,7 @@
 #  Stores info like an Array, but internally may manage it differently to be more memory-efficient
 #  Provides a layer of abstraction between the storage (Array, Hash, etc.) and the downstream users (Contig)
 #  that allows us to flexibly change implementation details to optimize performance without affecting other classes
+#  Also adds sugar for vector arithmetic
 
 require 'enumerator'
 require 'stats'

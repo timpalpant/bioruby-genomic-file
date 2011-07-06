@@ -5,7 +5,7 @@
 
 Gem::Specification.new do |s|
   s.name = %q{bio-genomic-file}
-  s.version = "0.1.2"
+  s.version = "0.1.3"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["timpalpant"]
@@ -52,6 +52,12 @@ Gem::Specification.new do |s|
     "lib/bio/utils/samtools.rb",
     "lib/bio/utils/tabix.rb",
     "lib/bio/utils/ucsc_tools.rb",
+    "lib/sparse_array.rb",
+    "lib/stats.rb",
+    "lib/utils/fixed_precision.rb",
+    "lib/utils/numeric.rb",
+    "lib/utils/parallelizer.rb",
+    "lib/utils/unix.rb",
     "spec/affy_spec.rb",
     "spec/assembly_spec.rb",
     "spec/bed_spec.rb",
@@ -89,13 +95,14 @@ Gem::Specification.new do |s|
     "spec/spot_spec.rb",
     "spec/stats_spec.rb",
     "spec/ucsc_tools_spec.rb",
+    "spec/unix_spec.rb",
     "spec/wig_spec.rb"
   ]
   s.homepage = %q{http://github.com/timpalpant/bio-genomic-file}
   s.licenses = ["MIT"]
   s.require_paths = ["lib"]
   s.rubygems_version = %q{1.3.7}
-  s.summary = %q{Work with genomic file formats in a consistent, simple and performant fashion}
+  s.summary = %q{Work with common genomic file formats in a consistent, simple and performant fashion}
 
   if s.respond_to? :specification_version then
     current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION
@@ -103,20 +110,20 @@ Gem::Specification.new do |s|
 
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
       s.add_runtime_dependency(%q<bio>, [">= 1.4.0"])
-      s.add_runtime_dependency(%q<parallel-forkmanager>, ["~> 1.5.1"])
+      s.add_runtime_dependency(%q<parallel>, ["~> 0.5.5"])
       s.add_development_dependency(%q<rspec>, ["~> 2.6.0"])
       s.add_development_dependency(%q<bundler>, ["~> 1.0.0"])
       s.add_development_dependency(%q<jeweler>, ["~> 1.6.2"])
     else
       s.add_dependency(%q<bio>, [">= 1.4.0"])
-      s.add_dependency(%q<parallel-forkmanager>, ["~> 1.5.1"])
+      s.add_dependency(%q<parallel>, ["~> 0.5.5"])
       s.add_dependency(%q<rspec>, ["~> 2.6.0"])
       s.add_dependency(%q<bundler>, ["~> 1.0.0"])
       s.add_dependency(%q<jeweler>, ["~> 1.6.2"])
     end
   else
     s.add_dependency(%q<bio>, [">= 1.4.0"])
-    s.add_dependency(%q<parallel-forkmanager>, ["~> 1.5.1"])
+    s.add_dependency(%q<parallel>, ["~> 0.5.5"])
     s.add_dependency(%q<rspec>, ["~> 2.6.0"])
     s.add_dependency(%q<bundler>, ["~> 1.0.0"])
     s.add_dependency(%q<jeweler>, ["~> 1.6.2"])

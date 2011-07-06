@@ -1,29 +1,28 @@
 #
 #  parallelizer.rb
 #  BioRuby
-#  Parallelize computations across chromosomes with ForkManager
+#  Parallelize enumerable computations with Parallel gem
+#  See: https://github.com/grosser/parallel
 #
 #  Created by Timothy Palpant on 6/1/11.
 #  Copyright 2011 UNC. All rights reserved.
 #
 
 require 'tmpdir'
-require 'forkmanager'
+require 'parallel'
 
-module Enumerable
-  @@pm = Parallel::ForkManager.new(2, {'tempdir' => Dir.tmpdir})
-  
-  def self.max_threads=(n)
-    @@pm = Parallel::ForkManager.new(n.to_i, {'tempdir' => Dir.tmpdir})
+module Enumerable  
+  # Parallel each: iterate over each element using multiple parallel processes
+  # NOTE: Each process has its own variable-space, so changes must be
+  # persisted to disk
+  def p_each(opts = {}, &block)  
+    Parallel.each(self, opts, &block)
   end
   
-  def p_each
-    self.each do |e|
-      @@pm.start(e) and next
-      yield(e)
-      @@pm.finish(0)
-    end
-
-    @@pm.wait_all_children
+  # Parallel each: iterate over each element using multiple parallel processes
+  # NOTE: Each process has its own variable-space, so changes must be
+  # persisted to disk
+  def p_map(opts = {}, &block)  
+    Parallel.map(self, opts, &block)
   end
 end

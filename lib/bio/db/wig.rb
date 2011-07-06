@@ -56,14 +56,14 @@ class WigFile
     end
   end
   
-  # Enumerate over the contigs in this Wig file
-  def each
+  # Iterate over the contigs in this Wig file
+  def each()
     @contigs_index.each do |contig_info|
       yield query(contig_info.chr, contig_info.start, contig_info.stop)
     end
   end
   
-  # Enumerate over chunks in this Wig file
+  # Iterate over chunks in this Wig file
   # NOTE: The order of the chunks is not guaranteed
   def each_chunk
     @contigs_index.each do |contig_info|
@@ -106,7 +106,7 @@ class WigFile
   end
   
   # Compute some transformation on the values in this file, and output the result to disk
-  def transform(output_file)
+  def transform(output_file, assembly = nil, opts = {})
     # Write the output file header
     header_file = output_file+'.header'
     File.open(header_file, 'w') do |f|
@@ -119,7 +119,7 @@ class WigFile
   
     begin
       # Iterate by contig
-      @contigs_index.p_each do |contig_info|
+      @contigs_index.p_each(opts) do |contig_info|
         puts "\nProcessing contig #{contig_info}" if ENV['DEBUG']
 
         # Write the header
@@ -141,7 +141,7 @@ class WigFile
           
           # Write this chunk to disk
           File.open(chr_temp_file, 'a') do |f|
-            f.puts output.map { |value| value ? value.to_s(5) : 'NaN' }.join("\n")
+            f.puts output.map { |value| value ? value.to_s(5) : 'n/a' }.join("\n")
           end
           
           chunk_start = chunk_stop + 1
@@ -229,8 +229,8 @@ class BigWigFile < WigFile
   
   # Convert the output of #transform back to BigWig
   alias :super_transform :transform
-  def transform(output_file, assembly, &block)
-    super_transform(output_file, &block)
+  def transform(output_file, assembly, opts = {}, &block)
+    super_transform(output_file, assembly, opts, &block)
     
     # Convert the output Wig file to BigWig
     tmp_file = output_file + '.tmp'
