@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{bio-genomic-file}
-  s.version = "0.1.3"
+  s.version = "0.2.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["timpalpant"]
-  s.date = %q{2011-07-06}
+  s.date = %q{2011-07-08}
   s.description = %q{Allows iteration and querying of common genomic file formats, including Bed, BedGraph, GFF, Wiggle, and SAM/BAM}
   s.email = %q{tim@palpant.us}
   s.extra_rdoc_files = [
@@ -27,44 +27,17 @@ Gem::Specification.new do |s|
     "VERSION",
     "bio-genomic-file.gemspec",
     "lib/bio-genomic-file.rb",
-    "lib/bio/db/affy.rb",
-    "lib/bio/db/assembly.rb",
-    "lib/bio/db/bed.rb",
-    "lib/bio/db/bedgraph.rb",
-    "lib/bio/db/entry_file.rb",
-    "lib/bio/db/entry_file_sniffer.rb",
-    "lib/bio/db/genome.rb",
-    "lib/bio/db/gff.rb",
-    "lib/bio/db/macs.rb",
-    "lib/bio/db/nucleosome.rb",
-    "lib/bio/db/pwm.rb",
-    "lib/bio/db/read_file.rb",
-    "lib/bio/db/sam.rb",
-    "lib/bio/db/spot_file.rb",
-    "lib/bio/db/wig.rb",
-    "lib/bio/db/wig_math.rb",
     "lib/bio/genomics/contig.rb",
-    "lib/bio/genomics/genomic_data.rb",
-    "lib/bio/genomics/genomic_index_error.rb",
-    "lib/bio/genomics/genomic_interval.rb",
     "lib/bio/genomics/read.rb",
     "lib/bio/genomics/spot.rb",
     "lib/bio/utils/samtools.rb",
     "lib/bio/utils/tabix.rb",
-    "lib/bio/utils/ucsc_tools.rb",
     "lib/sparse_array.rb",
     "lib/stats.rb",
     "lib/utils/fixed_precision.rb",
     "lib/utils/numeric.rb",
     "lib/utils/parallelizer.rb",
     "lib/utils/unix.rb",
-    "spec/affy_spec.rb",
-    "spec/assembly_spec.rb",
-    "spec/bed_spec.rb",
-    "spec/bedgraph_spec.rb",
-    "spec/contig_spec.rb",
-    "spec/entry_file_sniffer_spec.rb",
-    "spec/fixed_precision_spec.rb",
     "spec/fixtures/test.2bit",
     "spec/fixtures/test.affy",
     "spec/fixtures/test.bam",
@@ -81,22 +54,7 @@ Gem::Specification.new do |s|
     "spec/fixtures/test.nukes",
     "spec/fixtures/test.sam",
     "spec/fixtures/test.wig",
-    "spec/genome_spec.rb",
-    "spec/genomic_data_spec.rb",
-    "spec/genomic_interval_spec.rb",
-    "spec/gff_spec.rb",
-    "spec/macs_spec.rb",
-    "spec/nucleosome_spec.rb",
-    "spec/parallelizer_spec.rb",
-    "spec/read_spec.rb",
-    "spec/sam_spec.rb",
-    "spec/sparse_array_spec.rb",
-    "spec/spec_helper.rb",
-    "spec/spot_spec.rb",
-    "spec/stats_spec.rb",
-    "spec/ucsc_tools_spec.rb",
-    "spec/unix_spec.rb",
-    "spec/wig_spec.rb"
+    "spec/spec_helper.rb"
   ]
   s.homepage = %q{http://github.com/timpalpant/bio-genomic-file}
   s.licenses = ["MIT"]

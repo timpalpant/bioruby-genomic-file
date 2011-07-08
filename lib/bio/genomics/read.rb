@@ -1,14 +1,18 @@
 require 'bio'
-require 'bio/genomics/genomic_interval'
+require 'bio/genomics/interval'
 
 ##
 # A genomic interval with an associated sequence (read)
 # i.e. for high-throughput, short-read sequencing
 ##
-class Read < GenomicInterval
-  attr_accessor :seq, :qual
-  
-  def to_s
-    "Read: #{chr},#{@start},#{@stop},#{@seq}"
+module Bio
+  module Genomics
+    class Read < Interval
+      attr_accessor :seq, :qual
+      
+      def to_s
+        "Read: #{chr},#{@start},#{@stop},#{@seq}"
+      end
+    end
   end
 end
