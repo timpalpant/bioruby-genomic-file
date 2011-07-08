@@ -13,10 +13,15 @@ module Bio
         @stop = stop
       end
       
-      # Output this genomic interval as a string (the format is suitable
-      # for UCSC or samtools)
+      
       def to_s
-        "#{@chr}:#{start}-#{stop}"
+        query_string
+      end
+      
+      # Output this genomic interval as a coordinate string (the format is suitable
+      # for UCSC or samtools)
+      def query_string
+        "#{@chr}:#{@start}-#{@stop}"
       end
       
       def to_bed
