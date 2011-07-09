@@ -73,8 +73,7 @@ module Bio
           skipped += 1
         end
       end
-      
-      puts "Skipped #{skipped} invalid entries" if ENV['DEBUG']
+     
       skipped
     end
     

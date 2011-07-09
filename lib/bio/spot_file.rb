@@ -63,16 +63,13 @@ module Bio
     
     # Return a Contig of values for the given window
     def query(chr, start, stop)
-      low = [start, stop].min
-      high = [start, stop].max
-      length = high - low + 1
-      
+      raise EntryFileError, "Invalid query! (#{start} > #{stop})" if start > stop
       contig = Genomics::Contig.new(chr)
       
       self.each(chr, start, stop) do |spot|
         # Get the high and low spot coordinates, and clamp to the ends of the window
-        low = [low, spot.low].max
-        high = [spot.high, high].min
+        low = [start, spot.low].max
+        high = [spot.high, stop].min
       
         for bp in low..high
           contig.set(bp, spot.value) unless spot.value.nil?

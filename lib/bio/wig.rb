@@ -67,7 +67,7 @@ module Bio
         chunk_start = contig_info.start
         while chunk_start <= contig_info.stop
           chunk_stop = [chunk_start+200_000-1, contig_info.stop].min
-          puts "Processing chunk #{chr}:#{chunk_start}-#{chunk_stop}" if ENV['DEBUG']
+          puts "Processing chunk #{contig_info.chr}:#{chunk_start}-#{chunk_stop}" if ENV['DEBUG']
           
           yield query(contig_info.chr, chunk_start, chunk_stop)
 
@@ -128,17 +128,16 @@ module Bio
           chunk_start = contig_info.start
           while chunk_start <= contig_info.stop
             chunk_stop = [chunk_start+200_000-1, contig_info.stop].min
-            puts "Processing chunk #{chr}:#{chunk_start}-#{chunk_stop}" if ENV['DEBUG']
+            puts "Processing chunk #{contig_info.chr}:#{chunk_start}-#{chunk_stop}" if ENV['DEBUG']
             
             output = yield(contig_info.chr, chunk_start, chunk_stop)
             if output.length != chunk_stop-chunk_start+1
-              puts "Transform block did not return the expected number of values! (#{output.length} vs. #{chunk_stop-chunk_start+1})"
-              raise WigError
+              raise WigError, "Transform block did not return the expected number of values! (#{output.length} vs. #{chunk_stop-chunk_start+1})"
             end
             
             # Write this chunk to disk
             File.open(chr_temp_file, 'a') do |f|
-              f.puts output.map { |value| value ? value.to_s(5) : 'n/a' }.join("\n")
+              f.puts output.map { |value| value ? value.to_s(5) : 'NaN' }.join("\n")
             end
             
             chunk_start = chunk_stop + 1
@@ -152,6 +151,21 @@ module Bio
       ensure
         # Delete the individual temp files created by each process
         tmp_files.each { |filename| File.delete(filename) if File.exist?(filename) }
+      end
+      
+      # Convert the output Wig file to BigWig
+      tmp_file = output_file + '.tmp'
+      begin
+        TextWigFile.to_bigwig(output_file, tmp_file, assembly)
+      
+        # Delete the temporary intermediate Wig file by moving the BigWig on top of it
+        FileUtils.move(tmp_file, output_file)
+      rescue
+        File.delete(output_file) if File.exist?(output_file)
+        raise WigError, "Error converting transformed Wig file to BigWig!"
+      ensure
+        # Cleanup the files if something went wrong
+        File.delete(tmp_file) if File.exist?(tmp_file)
       end
     end
     
@@ -306,25 +320,6 @@ module Bio
       #@stdev = info[-1].chomp.split(':').last.to_f
       @min = info[-3].chomp.split(':').last.to_f
       @max = info[-2].chomp.split(':').last.to_f
-    end
-    
-    # Convert the output of #transform back to BigWig
-    alias :super_transform :transform
-    def transform(output_file, assembly, opts = {}, &block)
-      super_transform(output_file, assembly, opts, &block)
-      
-      # Convert the output Wig file to BigWig
-      tmp_file = output_file + '.tmp'
-      begin
-        TextWigFile.to_bigwig(output_file, tmp_file, assembly)
-      
-        # Delete the temporary intermediate Wig file by moving the BigWig on top of it
-        FileUtils.move(tmp_file, output_file)
-      rescue
-        # Cleanup the files if something went wrong
-        File.delete(tmp_file) if File.exist?(tmp_file)
-        File.delete(output_file) if File.exist?(output_file)
-      end
     end
     
     ##

@@ -237,7 +237,7 @@ class File
   
   # Sort files
   def self.sort(input_file, output_file, options)
-    %x[ sort #{options} -o #{output_file} #{input_file} ]
+    %x[ sort #{options} -o '#{output_file}' '#{input_file}' ]
   end
   
   # Diff two files
