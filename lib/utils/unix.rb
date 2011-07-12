@@ -41,11 +41,13 @@ class File
   # Based on code originally provided by Ryan Davis (which, in turn, is
   # based on Perl's -B switch).
   #
-  # Adapted from ptools gem
+  # Adapted from ptools gem, and fixed to also count newline characters
   #
-  def self.binary?(file)
+  def self.binary?(file, threshold = 0.30)
+    # Get the first block of data from the file and split to characters
     s = (File.read(file, File.stat(file).blksize) || "").split(//)
-    ((s.size - s.grep(" ".."~").size) / s.size.to_f) > 0.30
+    # Is the proportion of non-ASCII characters greater than the threshold?
+    ((s.size - s.grep(/(.|\n)/).size) / s.size.to_f) > threshold
   end
   
   # Return an array of strings resulting from the output of grep -v
@@ -107,7 +109,7 @@ class File
       end
     # Otherwise use native Ruby implementation
     else
-      buffer = 4096
+      buffer = File.stat(filename).blksize
       count = 0
       lines = Array.new
       
@@ -182,7 +184,7 @@ class File
       chunks = Array.new
       
       File.open(filename) do |f|
-        buffer = 4096
+        buffer = f.stat.blksize
         idx = [f.size - buffer, 0].max
         count = 0
 
