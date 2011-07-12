@@ -47,7 +47,7 @@ class File
     # Get the first block of data from the file and split to characters
     s = (File.read(file, File.stat(file).blksize) || "").split(//)
     # Is the proportion of non-ASCII characters greater than the threshold?
-    ((s.size - s.grep(/(.|\n)/).size) / s.size.to_f) > threshold
+    ((s.size - s.grep(/[\s\w\b]/).size) / s.size.to_f) > threshold
   end
   
   # Return an array of strings resulting from the output of grep -v
