@@ -1,9 +1,9 @@
 require 'rspec'
 require 'bio-genomic-file'
-#require 'simplecov'
+require 'simplecov'
 include Bio
 
-#SimpleCov.start do
-#  add_filter "spec"
-#  add_group "Common", "common"
-#end
+SimpleCov.start do
+  add_filter "spec"
+  add_group "Common", "common"
+end
