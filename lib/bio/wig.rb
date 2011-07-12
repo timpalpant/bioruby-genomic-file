@@ -54,7 +54,7 @@ module Bio
     end
     
     # Iterate over the contigs in this Wig file
-    def each()
+    def each
       @contigs_index.each do |contig_info|
         yield query(contig_info.chr, contig_info.start, contig_info.stop)
       end
@@ -487,7 +487,7 @@ module Bio
           first_line = String.new
           while first_line.nil? or first_line.chomp.empty?
             line_start += 1
-            first_line = File.lines(@data_file, line_start, line_start).first
+            first_line = File.lines(@data_file, line_start, line_start)
           end
           info.line_start = line_start
           @contigs_index << info
@@ -515,7 +515,7 @@ module Bio
           last_line = String.new
           while last_line.nil? or last_line.chomp.empty?
             offset += 1
-            last_line = File.lines(@data_file, next_contig_line-offset, next_contig_line-offset).first
+            last_line = File.lines(@data_file, next_contig_line-offset, next_contig_line-offset)
           end
           contig_info.line_stop = next_contig_line - offset
           
@@ -525,7 +525,7 @@ module Bio
         # for variableStep lines, we need to find the start and stop
         else
           # Find the start, i.e. the first base pair with data
-          contig_info.start = File.lines(@data_file, contig_info.line_start, contig_info.line_start).first.chomp.split("\t").first.to_i
+          contig_info.start = File.lines(@data_file, contig_info.line_start, contig_info.line_start).split("\t").first.to_i
           
           # Find the stop, i.e. the last base pair with data
           # Get the line number of the next contig in the file
@@ -543,7 +543,7 @@ module Bio
           last_line = String.new
           while last_line.nil? or last_line.chomp.empty?
             offset += 1
-            last_line = File.lines(@data_file, next_contig_line-offset, next_contig_line-offset).first
+            last_line = File.lines(@data_file, next_contig_line-offset, next_contig_line-offset)
           end
           contig_info.line_stop = next_contig_line - offset
           contig_info.stop = last_line.split("\t").first.to_i + contig_info.span - 1

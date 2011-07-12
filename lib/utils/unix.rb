@@ -57,7 +57,7 @@ class File
         output.each { |line| yield line }
       end
     else
-      return %x[ grep -v '#{search_str}' #{filename} ].split("\n")
+      return %x[ grep -v '#{search_str}' #{filename} ]
     end
   end
   
@@ -89,46 +89,59 @@ class File
         output.each { |line| yield line }
       end
     else
-      return %x[ grep -w '#{search_str}' #{filename} ].split("\n")
+      return %x[ grep -w '#{search_str}' #{filename} ]
     end
   end
   
   # Get lines m..n of a file
   def self.lines(filename, start_line, end_line)
-    buffer = 4096
-    count = 0
-    lines = Array.new
-    
-    File.open(filename) do |f|
-      while count < start_line and 
-        chunk = f.read(buffer)
-        raise "There are only #{count} lines in #{File.basename(filename)}! (cannot get #{start_line}..#{end_line})" if chunk.nil?
-        lines_in_chunk = chunk.count("\n")
-        count += lines_in_chunk
+    # If head and tail are available, use them (better performance)
+    if has_head? and has_tail?
+      num_lines = end_line - start_line + 1
+      if block_given?
+        IO.popen("tail -n+#{start_line} #{filename} 2>&1 | head -n #{num_lines}") do |pipe|
+          pipe.each { |line| yield line }
+        end
+      else
+        return %x[ tail -n+#{start_line} #{filename} 2>&1 | head -n #{num_lines} ]
       end
+    # Otherwise use native Ruby implementation
+    else
+      buffer = 4096
+      count = 0
+      lines = Array.new
       
-      # Move back one chunk
-      idx = [f.pos - buffer, 0].max
-      f.seek(idx)
-      # Move to the next line unless we're at the beginning of the file
-      f.gets unless idx == 0
-      line_num = count - lines_in_chunk
-      
-      while line_num < end_line
-        line = f.gets
-        line_num += 1
-        raise "There are only #{line_num} lines lines in #{File.basename(filename)}! (cannot get #{start_line}..#{end_line})" if line.nil?
-        next if line_num < start_line
+      File.open(filename) do |f|
+        while count < start_line and 
+          chunk = f.read(buffer)
+          raise "There are only #{count} lines in #{File.basename(filename)}! (cannot get #{start_line}..#{end_line})" if chunk.nil?
+          lines_in_chunk = chunk.count("\n")
+          count += lines_in_chunk
+        end
         
-        if block_given?
-          yield line
-        else
-          lines << line.chomp
+        # Move back one chunk
+        idx = [f.pos - buffer, 0].max
+        f.seek(idx)
+        # Move to the next line unless we're at the beginning of the file
+        f.gets unless idx == 0
+        line_num = count - lines_in_chunk
+        
+        while line_num < end_line
+          line = f.gets
+          line_num += 1
+          raise "There are only #{line_num} lines lines in #{File.basename(filename)}! (cannot get #{start_line}..#{end_line})" if line.nil?
+          next if line_num < start_line
+          
+          if block_given?
+            yield line
+          else
+            lines << line.chomp
+          end
         end
       end
-    end
 
-    return lines unless lines.length == 0
+      return lines unless lines.length == 0
+    end
   end
   
   # Get the first n lines of a file
@@ -141,52 +154,65 @@ class File
       if block_given?
         yield line
       else
-        lines << line.chomp
+        lines << line
       end
       
       count += 1
       break if count == num_lines
     end
     
-    return lines unless lines.length == 0
+    return lines.join unless lines.length == 0
   end
     
   # Get the last n lines of a file
   def self.tail(filename, num_lines)
     return if num_lines <= 0
-    chunks = Array.new
     
-    File.open(filename) do |f|
-      buffer = 4096
-      idx = [f.size - buffer, 0].max
-      count = 0
-
-      begin
-        # Seek to the desired position and read a chunk
-        f.seek(idx)
-        chunk = f.read(buffer)
-        
-        # Count the number of lines in the chunk
-        count += chunk.count("\n")
-        
-        # If we're returning an Array of lines,
-        # store the chunks now so we don't have to re-read them
-        chunks.unshift(chunk) unless block_given?
-        
-        # Move to the next chunk
-        idx -= buffer
-      end while count < num_lines and f.pos > 0
-    
+    # Use tail command if it's available (better performance)
+    if has_tail?
       if block_given?
-        skip = [count - num_lines, 0].max
-        i = 0
-        f.seek(idx+buffer)
-        f.each_line do |line|
-          yield line unless i <= skip
-          i += 1
+        IO.popen("tail -n #{num_lines} #{File.expand_path(filename)}") do |pipe|
+          pipe.each { |line| yield line }
         end
       else
-        return chunks.join.lines.reverse_each.take(num_lines).reverse
+        return %x[ tail -n #{num_lines} #{File.expand_path(filename)} ]
+      end
+    # Otherwise use native code
+    else
+      chunks = Array.new
+      
+      File.open(filename) do |f|
+        buffer = 4096
+        idx = [f.size - buffer, 0].max
+        count = 0
+
+        begin
+          # Seek to the desired position and read a chunk
+          f.seek(idx)
+          chunk = f.read(buffer)
+          
+          # Count the number of lines in the chunk
+          count += chunk.count("\n")
+          
+          # If we're returning an Array of lines,
+          # store the chunks now so we don't have to re-read them
+          chunks.unshift(chunk) unless block_given?
+          
+          # Move to the next chunk
+          idx -= buffer
+        end while count < num_lines and f.pos > 0
+      
+        if block_given?
+          skip = [count - num_lines, 0].max
+          i = 0
+          f.seek(idx+buffer)
+          f.each_line do |line|
+            yield line unless i <= skip
+            i += 1
+          end
+        else
+          return chunks.join.lines.reverse_each.take(num_lines).reverse
+        end
       end
     end
   end
@@ -242,7 +268,7 @@ class File
   
   # Diff two files
   def self.diff(file1, file2)
-    %x[ diff #{File.expand_path(file1)} #{File.expand_path(file2)} ].split("\n")
+    %x[ diff #{File.expand_path(file1)} #{File.expand_path(file2)} ]
   end
   
   ##
@@ -269,5 +295,19 @@ class File
     end
     
     return @@has_which
+  end
+  
+  # Look for head executable in the $PATH
+  def self.has_head?
+    # Cache for performance
+    @@has_head = !self.which('head').nil? if not defined? @@has_head
+    return @@has_head
+  end
+  
+  # Look for tail executable in the $PATH
+  def self.has_tail?
+    # Cache for performance
+    @@has_tail = !self.which('tail').nil? if not defined? @@has_tail
+    return @@has_tail
   end
 end

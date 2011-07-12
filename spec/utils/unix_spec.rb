@@ -24,7 +24,7 @@ describe File do
   end
 
   it "should inverse grep" do
-    File.inverse_grep(FILE_UTILS1, 'chrIV').length.should == 9
+    File.inverse_grep(FILE_UTILS1, 'chrIV').split("\n").length.should == 9
     
     count = 0
     File.inverse_grep(FILE_UTILS1, 'chrIV') { |line| count += 1 }
@@ -47,7 +47,7 @@ describe File do
   end
   
   it "should grep" do
-    File.grep(FILE_UTILS1, 'chrI').length.should == 3
+    File.grep(FILE_UTILS1, 'chrI').split("\n").length.should == 3
     
     count = 0
     File.grep(FILE_UTILS1, 'chrI') { |line| count += 1 }
@@ -59,12 +59,12 @@ describe File do
   end
 
   it "should retrieve random lines" do
-    File.lines(FILE_UTILS1, 1, 5).length.should == 5
-    File.lines(FILE_UTILS1, 6, 8).length.should == 3
-    File.lines(FILE_UTILS1, 2, 2).length.should == 1
-    File.lines(FILE_UTILS1, 2, 2).first.should == "chrI	100	95	Spot2	13.2"
-    File.lines(FILE_UTILS1, 2, 8).first.should == "chrI	100	95	Spot2	13.2"
-    File.lines(FILE_UTILS1, 2, 8).last.should == "chrIV	0	12	Spot7	12	+"
+    File.lines(FILE_UTILS1, 1, 5).split("\n").length.should == 5
+    File.lines(FILE_UTILS1, 6, 8).split("\n").length.should == 3
+    File.lines(FILE_UTILS1, 2, 2).split("\n").length.should == 1
+    File.lines(FILE_UTILS1, 2, 2).split("\n").first.should == "chrI	100	95	Spot2	13.2"
+    File.lines(FILE_UTILS1, 2, 8).split("\n").first.should == "chrI	100	95	Spot2	13.2"
+    File.lines(FILE_UTILS1, 2, 8).split("\n").last.should == "chrIV	0	12	Spot7	12	+"
     
     count = 0
     File.lines(FILE_UTILS1, 6, 7) { |line| count += 1 }
@@ -72,13 +72,13 @@ describe File do
   end
   
   it "should retrieve lines from the start of a file" do
-    File.head(FILE_UTILS1, 3).length.should == 3
+    File.head(FILE_UTILS1, 3).split("\n").length.should == 3
     
     count = 0
     File.head(FILE_UTILS1, 5) { |line| count += 1 }
     count.should == 5
     
-    File.head(FILE_UTILS1, 5).last.chomp.should == "illegal entry"
+    File.head(FILE_UTILS1, 5).split("\n").last.chomp.should == "illegal entry"
     
     last_line = String.new
     File.head(FILE_UTILS1, 5) { |line| last_line = line }
@@ -86,13 +86,13 @@ describe File do
   end
   
   it "should retrieve lines from the end of a file" do
-    File.tail(FILE_UTILS1, 3).length.should == 3
+    File.tail(FILE_UTILS1, 3).split("\n").length.should == 3
     
     count = 0
     File.tail(FILE_UTILS1, 5) { |line| count += 1 }
     count.should == 5
     
-    File.tail(FILE_UTILS1, 5).first.chomp.should == "chrIV	1	10	Spot8	1.0	-"
+    File.tail(FILE_UTILS1, 5).split("\n").first.chomp.should == "chrIV	1	10	Spot8	1.0	-"
     
     first_line = String.new
     count = 0
