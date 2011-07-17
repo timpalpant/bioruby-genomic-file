@@ -20,6 +20,9 @@ require 'bio/entry_file_sniffer'
 module Bio
   class EntryFile
     include Enumerable
+    
+    # Maximum number of entries to pre-cache
+    CACHE_SIZE = 10_000
 
     def initialize(filename, index_file = nil)
       @data_file = File.expand_path(filename)
@@ -65,8 +68,8 @@ module Bio
       
       query_lines(chr, start, stop) do |line|
         # Skip comment and track lines
-        next if line.start_with?('#') or line.start_with?('@') or line.start_with?('track') or line.chomp.empty?
-        
+        next if line.start_with?('#','@','track') or line.chomp.empty?
+
         begin
           yield parse(line)
         rescue EntryFileError
@@ -98,8 +101,8 @@ module Bio
     end
     
     # Query for a specific chromosome
-    def chr(chr_id, &block)
-      if block
+    def chr(chr_id)
+      if block_given?
         self.each(chr_id) { |entry| yield entry }
       else
         # TODO: Return a custom Enumerable object that doesn't require

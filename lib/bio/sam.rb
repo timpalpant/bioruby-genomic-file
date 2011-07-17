@@ -179,7 +179,7 @@ module Bio
       if @chromosomes.nil?
         index() if not indexed?
         @chromosomes = Array.new
-        Utils::SAMTools.idxstats(@data_file).each do |line| 
+        Utils::SAMTools.idxstats(@data_file).each_line do |line| 
           entry = line.chomp.split("\t")
           chr = entry[0]
           bases = entry[1].to_i
@@ -213,9 +213,9 @@ module Bio
       end
     end
     
-    def query_lines(chr = nil, start = nil, stop = nil, &block)
+    def query_lines(chr = nil, start = nil, stop = nil)
       index() if not indexed?
-      Utils::SAMTools.view(@data_file, chr, start, stop, &block)
+      Utils::SAMTools.view(@data_file, chr, start, stop) { |line| yield line }
     end
     
     def parse(line)

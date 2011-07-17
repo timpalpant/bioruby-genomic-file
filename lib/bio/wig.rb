@@ -348,7 +348,7 @@ module Bio
         
         # Store the chunk of values in the Contig
         chunk.each_with_index do |value,i|
-          next if value.nil?
+          next if value == 'n/a' or value == 'nan'
           contig.set(query_start+i, value.to_f)
         end
         
@@ -374,7 +374,7 @@ module Bio
     end
     
     def to_bedgraph(output_file)
-      BiGWig.to_bedgraph(@data_file, output_file)
+      BigWig.to_bedgraph(@data_file, output_file)
     end
     
     # Write a BigWigFile to a Wig file
@@ -427,7 +427,7 @@ module Bio
         num_values = stop - start + 1
         begin
           result = UCSC.bigwig_summary(@data_file, chr, start, stop, num_values, 'coverage')
-          return start + result.find_index(1)
+          return start + result.find_index('1')
         rescue UCSC::ToolsError
         end
         
@@ -448,7 +448,7 @@ module Bio
         num_values = stop - start + 1
         begin
           result = UCSC.bigwig_summary(@data_file, chr, start, stop, num_values, 'coverage')
-          return stop - result.reverse.find_index(1)
+          return stop - result.reverse.find_index('1')
         rescue UCSC::ToolsError
         end
         

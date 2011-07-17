@@ -101,11 +101,11 @@ class File
     if has_head? and has_tail?
       num_lines = end_line - start_line + 1
       if block_given?
-        IO.popen("tail -n+#{start_line} #{filename} 2>&1 | head -n #{num_lines}") do |pipe|
+        IO.popen("tail -n +#{start_line} #{filename} 2>&1 | head -n #{num_lines}") do |pipe|
           pipe.each { |line| yield line }
         end
       else
-        return %x[ tail -n+#{start_line} #{filename} 2>&1 | head -n #{num_lines} ]
+        return %x[ tail -n +#{start_line} #{filename} 2>&1 | head -n #{num_lines} ]
       end
     # Otherwise use native Ruby implementation
     else

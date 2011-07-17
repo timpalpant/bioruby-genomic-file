@@ -27,7 +27,7 @@ module Bio
             pipe.each { |line| yield line }
           end
         else
-          %x[ samtools view #{bam_file} #{query_string(chr, start, stop)} ].split("\n")
+          %x[ samtools view #{bam_file} #{query_string(chr, start, stop)} ]
         end
       end
 
@@ -53,7 +53,7 @@ module Bio
       # Retrieve and print stats in the index file. The output is TAB delimited with each 
       # line consisting of reference sequence name, sequence length, # mapped reads and # unmapped reads.
       def self.idxstats(bam_file)
-        %x[ samtools idxstats #{File.expand_path(bam_file)} ].split("\n")
+        %x[ samtools idxstats #{File.expand_path(bam_file)} ]
       end
 
       # Merge multiple sorted alignments. The header reference lists of all the input BAM files, 
@@ -72,7 +72,7 @@ module Bio
         if regions.nil?
           %x[ samtools faidx #{File.expand_path(fasta_file)} ]
         else
-          %x[ samtools faidx #{File.expand_path(fasta_file)} #{intervals.join(' ')} ].split("\n")
+          %x[ samtools faidx #{File.expand_path(fasta_file)} #{intervals.join(' ')} ]
         end
       end
 

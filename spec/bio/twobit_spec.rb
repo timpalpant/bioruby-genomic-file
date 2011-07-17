@@ -8,6 +8,14 @@ describe TwoBit do
     @test = TwoBit.new(TEST_2BIT)
   end
   
+  it "should allow opening with a block" do
+    TwoBit.open(TEST_2BIT) { |genome| }
+  end
+  
+  it "should allow opening without a block" do
+    twobit = TwoBit.open(TEST_2BIT)
+  end
+  
   it "should index all chromosomes" do
     @test.length.should == 2
   end
@@ -35,6 +43,9 @@ describe TwoBit do
   
   it "should be able to query for sequences" do
     seq = @test.sequence('chrI', 10, 20)
+    seq.should == Bio::Sequence::NA.new('CCCACACACCC')
+    
+    seq = @test.query('chrI', 10, 20)
     seq.should == Bio::Sequence::NA.new('CCCACACACCC')
   end
   

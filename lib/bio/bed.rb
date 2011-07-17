@@ -38,7 +38,8 @@ module Bio
       def self.parse(line)
         begin
           entry = line.chomp.split("\t")
-          raise BedError, "Invalid Bed Entry: Bed must have at least 3 columns" if entry.length < 3
+          num_cols = entry.length
+          raise BedError, "Invalid Bed Entry: Bed must have at least 3 columns" if num_cols < 3
             
           spot = self.new
           spot.chr = entry[0]
@@ -46,24 +47,24 @@ module Bio
           spot.start = entry[1].to_i+1
           # And half open
           spot.stop = entry[2].to_i  
-          spot.id = entry[3] if entry.length >= 4
-          spot.value = entry[4].to_f if entry.length >= 5 and entry[4] != '.'
+          spot.id = entry[3] if num_cols >= 4
+          spot.value = entry[4].to_f if num_cols >= 5 and entry[4] != '.'
           
           # Reverse start/stop if on the - strand
-          if entry.length >= 6 and entry[5].chomp == '-' and spot.start < spot.stop
+          if num_cols >= 6 and entry[5] == '-' and spot.start < spot.stop
             tmp = spot.start
             spot.start = spot.stop
             spot.stop = tmp
           end
       
-          if entry.length >= 8
+          if num_cols >= 8
             spot.thick_start = entry[6].to_i + 1
             spot.thick_end = entry[7].to_i
           end
 
-          spot.item_rgb = entry[8] if entry.length >= 9
+          spot.item_rgb = entry[8] if num_cols >= 9
 
-          if entry.length >= 12
+          if num_cols >= 12
             spot.block_count = entry[9].to_i 
             spot.block_sizes = entry[10].split(',').map { |v| v.to_i }
             raise BedError, "Invalid Bed Entry: blockCount does not correspond to number of blockSizes" if spot.block_count != spot.block_sizes.length

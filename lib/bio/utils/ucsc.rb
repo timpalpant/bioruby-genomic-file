@@ -43,7 +43,7 @@ module Bio
         values = output.split(' ')
         raise ToolsError, "bigWigSummary did not return the expected number of values!" if values.length != num_values
 
-        return values.map { |v| v.to_f unless v == 'n/a' or v == 'nan' }
+        return values
       end
       
       def self.bigwig_to_bedgraph(input_file, output_file)
@@ -61,7 +61,7 @@ module Bio
       def self.twobit_info(twobit_file)
         result = Hash.new
         
-        %x[ twoBitInfo #{File.expand_path(twobit_file)} stdout ].split("\n").each do |line| 
+        %x[ twoBitInfo #{File.expand_path(twobit_file)} stdout ].each_line do |line| 
           entry = line.split("\t")
           result[entry.first] = entry.last.to_i
         end
@@ -93,6 +93,7 @@ module Bio
 
       class ToolsError < StandardError
       end
+
 
       ##
       # A track header line for the UCSC Genome Browser
