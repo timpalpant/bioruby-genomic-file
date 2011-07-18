@@ -2,17 +2,28 @@
 
 Description goes here.
 
-=== External Requirements
+== Supported Formats
 
-=== Required Gems
+* Bed / BigBed
+* BedGraph
+* GFF
+* SAM / BAM
+* MACS Peak Calls
+* Wiggle / BigWig
+* TwoBit
 
-The easiest way to get set up is to use bundler:
+== External Requirements
 
-  $ sudo gem1.9 install bundler
+All required executables must be available in the $PATH.
 
-=== Setup
+* UCSC Tools (http://hgdownload.cse.ucsc.edu/admin/exe)
+* Tabix (http://samtools.sourceforge.net/tabix.shtml)
+* Standard Unix utilities: grep, which, head, tail, cat, etc.
+* SAMTools (only necessary if working with BAM files, http://samtools.sourceforge.net)
 
-== As a Gem
+== Setup
+
+=== As a Gem
 
 Install with RubyGems:
 
@@ -22,7 +33,7 @@ or add to your project's Bundler Gemfile:
 
   $ gem 'bio-genomic-file', :git => git://github.com/timpalpant/Ruby-Genomics.git
 
-== For Development
+=== For Development
 
 Checkout the source tree with git:
 
@@ -35,15 +46,13 @@ Use bundler to install the rest of the requirements:
 
 Run the specs to ensure that everything is set up correctly:
 
-  $ rake1.9
+  $ rake
   
-=== Examples
+== Examples
 
-=== To-Do
+== To-Do
 
 * Check for external dependencies during install and warn/error if they cannot be found
-* Auto-sniff filetypes
-* Make cross-platform by rewriting UnixFileUtils
 
 == Contributing to bio-genomic-file
  
