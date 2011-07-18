@@ -192,15 +192,9 @@ module Bio
     
     # Use wc to count the number of entries (assume one entry per line)
     def count(chr = nil, start = nil, stop = nil)  
-      if chr.nil?
-        %x[ grep -v -E '#|@|track' #{@data_file} | wc -l ].chomp.to_i
-      elsif chr and start.nil?
-        %x[ grep -w #{chr} #{@data_file} | wc -l ].chomp.to_i
-      else
-        num = 0
-        self.each(chr, start, stop) { |entry| num += 1 }
-        num
-      end
+      num = 0
+      self.each(chr, start, stop) { |entry| num += 1 }
+      num
     end
     
     private

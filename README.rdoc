@@ -31,7 +31,7 @@ Install with RubyGems:
   
 or add to your project's Bundler Gemfile:
 
-  $ gem 'bio-genomic-file', :git => git://github.com/timpalpant/Ruby-Genomics.git
+  $ gem 'bio-genomic-file', :git => git://github.com/timpalpant/bioruby-genomic-file.git
 
 === For Development
 
