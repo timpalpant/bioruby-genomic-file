@@ -83,23 +83,19 @@ module Bio
     # OUTPUT METHODS
     ##
     
-    # Write this array to variableStep Wig format
+    # Write this array to Wig format
+    # By first writing to bedGraph, then calling bedGraphToBigWig
+    # then calling bigWigToWig
     def to_wig(filename, assembly)    
-      # Iterate over each chromosome, mapping all spots and averaging
-      File.open(File.expand_path(filename), 'w') do |f|
-        # TODO: should be rewritten to intelligently use step size
-        f.puts Utils::UCSC::TrackHeader.new(:type => 'wiggle_0').to_s
-        
-        self.chromosomes.each do |chr|
-          # Skip if this chromosome is not in the specified assembly
-          next unless assembly.include?(chr)
-          
-          # Allocate space for the new Wig chromosomes
-          values = query(chr, 1, assembly[chr])
-        
-          # Write to output file
-          f.puts values.to_fixed_step
-        end
+      tmp_bigwig = filename + '.bw'
+      begin
+        self.to_bigwig(tmp_bigwig, assembly)
+        Utils::UCSC.bigwig_to_wig(tmp_bigwig, filename)
+      rescue
+        raise "Error converting to Wig!"
+      ensure
+        # Delete the temporary intermediate files
+        File.delete(tmp_bigwig) if File.exist?(tmp_bigwig)
       end
     end
     

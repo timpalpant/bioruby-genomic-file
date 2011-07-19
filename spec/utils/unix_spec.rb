@@ -7,6 +7,8 @@ describe File do
   FILE_UTILS1 = File.expand_path(File.dirname(__FILE__) + '/../fixtures/test.file1')
   FILE_UTILS2 = File.expand_path(File.dirname(__FILE__) + '/../fixtures/test.file2')
   FILE_UTILS3 = File.expand_path(File.dirname(__FILE__) + '/../fixtures/test.file3')
+  FILE_UTILS4 = File.expand_path(File.dirname(__FILE__) + '/../fixtures/test.bw')
+  FILE_UTILS5 = File.expand_path(File.dirname(__FILE__) + '/../fixtures/test.bam')
   
   it "should count lines" do
     File.num_lines(FILE_UTILS1).should == 13
@@ -21,6 +23,17 @@ describe File do
   it "should count words" do
     File.num_words(FILE_UTILS1).should == 59
     File.num_words(FILE_UTILS2).should == 977
+  end
+  
+  it "should detect if a file is binary" do
+    File.binary?(FILE_UTILS4).should be_true
+    File.binary?(FILE_UTILS5).should be_true
+  end
+  
+  it "should detect if a file is ASCII" do
+    File.binary?(FILE_UTILS1).should be_false
+    File.binary?(FILE_UTILS2).should be_false
+    File.binary?(FILE_UTILS3).should be_false
   end
 
   it "should inverse grep" do
