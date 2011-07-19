@@ -14,6 +14,8 @@ module Bio
     include Enumerable
     include WigMath
     
+    CHUNK_SIZE = 200_000
+    
     attr_reader :track_header, :data_file
     
     ##
@@ -61,12 +63,11 @@ module Bio
     end
     
     # Iterate over chunks in this Wig file
-    # NOTE: The order of the chunks is not guaranteed
-    def each_chunk
+    def each_chunk(size = CHUNK_SIZE)
       @contigs_index.each do |contig_info|
         chunk_start = contig_info.start
         while chunk_start <= contig_info.stop
-          chunk_stop = [chunk_start+200_000-1, contig_info.stop].min
+          chunk_stop = [chunk_start+size-1, contig_info.stop].min
           puts "Processing chunk #{contig_info.chr}:#{chunk_start}-#{chunk_stop}" if ENV['DEBUG']
           
           yield query(contig_info.chr, chunk_start, chunk_stop)
@@ -127,7 +128,7 @@ module Bio
           
           chunk_start = contig_info.start
           while chunk_start <= contig_info.stop
-            chunk_stop = [chunk_start+200_000-1, contig_info.stop].min
+            chunk_stop = [chunk_start+CHUNK_SIZE-1, contig_info.stop].min
             puts "Processing chunk #{contig_info.chr}:#{chunk_start}-#{chunk_stop}" if ENV['DEBUG']
             
             output = yield(contig_info.chr, chunk_start, chunk_stop)
@@ -338,7 +339,7 @@ module Bio
       query_start = start
       contig = Genomics::Contig.new(chr)
       while query_start <= stop
-        query_stop = [query_start+200_000-1, stop].min
+        query_stop = [query_start+CHUNK_SIZE-1, stop].min
         num_values = query_stop - query_start + 1
         begin
           chunk = UCSC.bigwig_summary(@data_file, chr, query_start, query_stop, num_values, type)
@@ -419,11 +420,10 @@ module Bio
     # Find the first base pair with data
     def find_start_base(chr, chr_length)
       # Start at the first base pair and look forwards
-      chunk_size = 200_000
       bp = 1
       while bp <= chr_length
         start = bp
-        stop = [start+chunk_size-1, chr_length].min
+        stop = [start+CHUNK_SIZE-1, chr_length].min
         num_values = stop - start + 1
         begin
           result = UCSC.bigwig_summary(@data_file, chr, start, stop, num_values, 'coverage')
@@ -431,7 +431,7 @@ module Bio
         rescue UCSC::ToolsError
         end
         
-        bp += chunk_size
+        bp += CHUNK_SIZE
       end
       
       raise WigError, "Could not find start base pair in BigWig file #{File.basename(@data_file)} for chromosome #{chr}"
@@ -440,10 +440,9 @@ module Bio
     # Find the last base pair with data
     def find_stop_base(chr, chr_length)
       # Start at the last base pair and look backwards
-      chunk_size = 200_000
       bp = chr_length
       while bp >= 1
-        start = [1, bp-chunk_size+1].max
+        start = [1, bp-CHUNK_SIZE+1].max
         stop = bp
         num_values = stop - start + 1
         begin
@@ -452,7 +451,7 @@ module Bio
         rescue UCSC::ToolsError
         end
         
-        bp -= chunk_size
+        bp -= CHUNK_SIZE
       end
       
       raise WigError, "Could not find stop base pair in BigWig file #{File.basename(@data_file)} for chromosome #{chr}"
