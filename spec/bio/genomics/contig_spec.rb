@@ -2,30 +2,89 @@ require 'spec_helper'
 require 'bio/genomics/contig'
 
 describe Genomics::Contig do
-  before do
-    @test = Genomics::Contig.new('chrI')
-    @test.set(100, 1.5)
-    @test.set(101, 1.5)
-    (105..111).each { |bp| @test.set(bp, 2.1234321) }
+  context "variable step" do
+    context "with default span (= 1)" do
+      before do
+        @test = Genomics::Contig.new('chrI')
+        @test.set(100, 1.5)
+        @test.set(101, 1.5)
+        (105..111).each { |bp| @test.set(bp, 2.1234321) }
+      end
+    
+      it "should output to variableStep format" do
+        @test.to_variable_step.should == "100\t1.5\n101\t1.5\n105\t2.1234\n106\t2.1234\n107\t2.1234\n108\t2.1234\n109\t2.1234\n110\t2.1234\n111\t2.1234"
+      end
+      
+      it "should raise an error if attempting to output to fixedStep format" do
+        lambda { @test.to_fixed_step }.should raise_error
+      end
+      
+      it "should not be fixed step" do
+        @test.should_not be_fixed_step
+      end
+    end
+  
+    context "with span = 5" do
+      before do
+        @test = Genomics::Contig.new('chrII', 5)
+        @test.set(100, 1.5)
+        @test.set(105, 2.0)
+        @test.set(114, 3.5)
+      end
+  
+      it "should output to variableStep format" do
+        @test.to_variable_step.should == "100\t1.5\n105\t2\n114\t3.5"
+      end
+      
+      it "should raise an error if attempting to output to fixedStep format" do
+        lambda { @test.to_fixed_step }.should raise_error
+      end
+      
+      it "should not be fixed step" do
+        @test.should_not be_fixed_step
+      end
+    end
   end
   
-  context "when no resolution is passed" do
-    it "should output to variableStep format with resolution = 1" do
-      @test.to_variable_step.should == "variableStep chrom=chrI span=1\n100\t1.5\n101\t1.5\n105\t2.1234\n106\t2.1234\n107\t2.1234\n108\t2.1234\n109\t2.1234\n110\t2.1234\n111\t2.1234"
-    end
+  context "fixed step" do
+    context "with default span (= 1)" do
+      before do
+        @test = Genomics::Contig.new('chrI')
+        (105..111).each { |bp| @test.set(bp, 2.1234321) }
+      end
     
-    it "should output to fixedStep format with resolution = 1" do
-      @test.to_fixed_step.should == "fixedStep chrom=chrI start=100 step=1 span=1\n1.5\n1.5\nNaN\nNaN\nNaN\n2.1234\n2.1234\n2.1234\n2.1234\n2.1234\n2.1234\n2.1234"
+      it "should output to variableStep format" do
+        @test.to_variable_step.should == "105\t2.1234\n106\t2.1234\n107\t2.1234\n108\t2.1234\n109\t2.1234\n110\t2.1234\n111\t2.1234"
+      end
+      
+      it "should output to fixedStep format" do
+        @test.to_fixed_step.should == "2.1234\n2.1234\n2.1234\n2.1234\n2.1234\n2.1234\n2.1234"
+      end
+      
+      it "should be fixed step" do
+        @test.should be_fixed_step
+      end
     end
-  end
   
-  context "when a resolution of 2 is passed" do
-    it "should output to variableStep format with resolution = 2" do
-      @test.to_variable_step(2).should == "variableStep chrom=chrI span=2\n100\t1.5\n106\t2.1234\n108\t2.1234\n110\t2.1234"
-    end
-    
-    it "should output to fixedStep format with resolution = 2" do
-      @test.to_fixed_step(2).should == "fixedStep chrom=chrI start=100 step=2 span=2\n1.5\nNaN\nNaN\n2.1234\n2.1234\n2.1234"
+    context "with span = 5" do
+      before do
+        @test = Genomics::Contig.new('chrII', 5)
+        @test.set(100, 1.5)
+        @test.set(110, 2.0)
+        @test.set(120, 3.5)
+      end
+  
+      it "should output to variableStep format" do
+        @test.to_variable_step.should == "100\t1.5\n110\t2\n120\t3.5"
+      end
+      
+      it "should output to fixedStep format" do
+        @test.to_fixed_step.should == "1.5\n2\n3.5"
+      end
+      
+      it "should be fixed step" do
+        @test.should be_fixed_step
+      end
     end
   end
 end

@@ -1,6 +1,6 @@
 #
 #  samtools.rb
-#  ruby-genomics
+#  bioruby-genomic-file
 #  Wrapper for the samtools executable
 #
 #  Created by Timothy Palpant on 5/30/11.

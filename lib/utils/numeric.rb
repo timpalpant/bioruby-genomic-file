@@ -1,6 +1,6 @@
 #
 #  numeric_utils.rb
-#  ruby-genomics
+#  bioruby-genomic-file
 #
 #  Helper methods for determining numeric objects
 #

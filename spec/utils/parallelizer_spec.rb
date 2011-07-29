@@ -1,6 +1,6 @@
 #
 #  parallelizer_spec.rb
-#  ruby-genomics
+#  bioruby-genomic-file
 #
 #  Created by Timothy Palpant on 6/28/11.
 #  Copyright 2011 UNC. All rights reserved.

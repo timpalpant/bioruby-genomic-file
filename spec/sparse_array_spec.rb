@@ -1,6 +1,6 @@
 #
 #  compact_array_spec.rb
-#  ruby-genomics
+#  bioruby-genomic-file
 #
 #  Created by Timothy Palpant on 6/25/11.
 #  Copyright 2011 UNC. All rights reserved.
@@ -13,6 +13,10 @@ describe SparseArray do
   context "without data" do
     before do
       @test = SparseArray.new
+    end
+    
+    it "should have nil contiguousness" do
+      @test.contiguous?.should be_nil
     end
     
     it "should have nil start" do
@@ -49,7 +53,7 @@ describe SparseArray do
   end
 
   
-  context "with data" do
+  context "with default span (= 1)" do
     before do
       @test = SparseArray.new
       @test.set(1, 1.0)
@@ -98,7 +102,7 @@ describe SparseArray do
     it "should allow iterating over values" do
       count = 0
       @test.each { |value| count += 1 }
-      count.should == 10
+      count.should == 4
     end
     
     it "should return the indices stored" do
@@ -107,7 +111,7 @@ describe SparseArray do
     end
     
     it "should return the values stored" do
-      @test.values.should == [1.0, 1.0, nil, nil, 2.0, nil, nil, nil, nil, 3.0]
+      @test.values.should == [1.0, 1.0, 2.0, 3.0]
     end
     
     it "should have start = 1" do
@@ -140,6 +144,10 @@ describe SparseArray do
     
     it "should have sparsity 0.4" do
       @test.sparsity.should == 0.4
+    end
+    
+    it "should not be contiguous" do
+      @test.should_not be_contiguous
     end
     
     it "should cover indices 1..10" do
@@ -307,7 +315,7 @@ describe SparseArray do
     end
     
     it "should convert to an Array" do
-      @test.to_a.should == [1.0, 1.0, nil, nil, 2.0, nil, nil, nil, nil, 3.0]
+      @test.to_a.should == [nil, 1.0, 1.0, nil, nil, 2.0, nil, nil, nil, nil, 3.0]
     end
     
     it "should convert to a Hash" do
@@ -317,6 +325,19 @@ describe SparseArray do
       h[2].should == 1.0
       h[5].should == 2.0
       h[10].should == 3.0
+    end
+  end
+  
+  context "when contingous" do
+    before do
+      @test = SparseArray.new
+      @test.set(1, 5.0)
+      @test.set(2, 10.3)
+      @test.set(3, 40.5)
+    end
+    
+    it "should be contiguous" do
+      @test.should be_contiguous
     end
   end
 end

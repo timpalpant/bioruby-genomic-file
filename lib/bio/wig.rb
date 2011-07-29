@@ -103,77 +103,19 @@ module Bio
       chr_contigs(query_chr).collect { |contig_info| contig_info.stop }.max
     end
     
-    # Compute some transformation on the values in this file, and output the result to disk
-    def transform(output_file, assembly = nil, opts = {})
-      # Write the output file header
-      header_file = output_file+'.header'
-      File.open(header_file, 'w') do |f|
-        f.puts @track_header.to_s
-      end
-
-      # Keep track of all the temporary intermediate files (header first)
-      tmp_files = [header_file]
-      @contigs_index.each { |contig_info| tmp_files << "#{output_file}.#{contig_info.chr}.#{contig_info.start}" }
-    
-      begin
-        # Iterate by contig
-        @contigs_index.p_each(opts) do |contig_info|
-          puts "\nProcessing contig #{contig_info}" if ENV['DEBUG']
-
-          # Write the header
-          chr_temp_file = "#{output_file}.#{contig_info.chr}.#{contig_info.start}"
-          File.open(chr_temp_file, 'w') do |f|
-            f.puts "fixedStep chrom=#{contig_info.chr} start=#{contig_info.start} step=1 span=1"
-          end
-          
-          chunk_start = contig_info.start
-          while chunk_start <= contig_info.stop
-            chunk_stop = [chunk_start+CHUNK_SIZE-1, contig_info.stop].min
-            puts "Processing chunk #{contig_info.chr}:#{chunk_start}-#{chunk_stop}" if ENV['DEBUG']
-            
-            output = yield(contig_info.chr, chunk_start, chunk_stop)
-            if output.length != chunk_stop-chunk_start+1
-              raise WigError, "Transform block did not return the expected number of values! (#{output.length} vs. #{chunk_stop-chunk_start+1})"
-            end
-            
-            # Write this chunk to disk
-            File.open(chr_temp_file, 'a') do |f|
-              f.puts output.map { |value| value ? value.to_s(5) : 'NaN' }.join("\n")
-            end
-            
-            chunk_start = chunk_stop + 1
-          end
-        end
-        
-        # Concatenate all of the temp file pieces into the final output
-        File.cat(tmp_files, output_file)
-      rescue
-        raise WigError, "Error transforming Wig file!"
-      ensure
-        # Delete the individual temp files created by each process
-        tmp_files.each { |filename| File.delete(filename) if File.exist?(filename) }
-      end
+    # Output a summary about this BigWigFile
+    def summary
+      str = StringIO.new
+      @contigs_index.each { |contig_info| str << "chrom=#{contig_info.chr}, start=#{contig_info.start}, stop=#{contig_info.stop}\n" }
+      str << "\nMean:\t#{mean}\n"
+      str << "Standard deviation:\t#{stdev}"
       
-      # Convert the output Wig file to BigWig
-      tmp_file = output_file + '.tmp'
-      begin
-        TextWigFile.to_bigwig(output_file, tmp_file, assembly)
-      
-        # Delete the temporary intermediate Wig file by moving the BigWig on top of it
-        FileUtils.move(tmp_file, output_file)
-      rescue
-        File.delete(output_file) if File.exist?(output_file)
-        raise WigError, "Error converting transformed Wig file to BigWig!"
-      ensure
-        # Cleanup the files if something went wrong
-        File.delete(tmp_file) if File.exist?(tmp_file)
-      end
+      return str.string
     end
     
-    # Output a summary about this BigWigFile
     def to_s
       str = StringIO.new
-      str << "Wig: connected to file #{File.basename(@data_file)}\n"
+      str << "WigFile: #{File.basename(@data_file)}\n"
       @contigs_index.each { |contig_info| str << "#{contig_info}\n" }
       str << "Mean:\t#{mean}\n"
       str << "Standard deviation:\t#{stdev}"
@@ -201,8 +143,9 @@ module Bio
     
     # Get the contigs for a chromosome
     def chr_contigs(query_chr)
-      raise WigError, "Wig does not include data for chromosome #{query_chr}" unless include?(query_chr)
-      return @contigs_index.select { |contig_info| contig_info.chr == query_chr }
+      result = @contigs_index.select { |contig_info| contig_info.chr == query_chr }
+      raise WigError, "Wig does not include data for chromosome #{query_chr}" unless result.length > 0
+      return result
     end
     
     ##
@@ -226,6 +169,14 @@ module Bio
         @line_stop = line_stop
       end
       
+      def fixed_step?
+        @type == FIXED_STEP
+      end
+      
+      def variable_step?
+        @type == VARIABLE_STEP
+      end
+      
       # Return which line contains data for a given base pair
       def line_for_bp(bp)
         raise WigError, "Cannot compute the line for a base pair with variableStep contigs" if @type == VARIABLE_STEP
@@ -243,7 +194,7 @@ module Bio
       # Parse a fixedStep/variableStep line
       def self.parse(line)
         # Remove any leading/trailing whitespace
-        line.chomp!
+        line.strip!
         
         # Store the type of Contig (fixedStep / variableStep)
         info = self.new
@@ -278,10 +229,10 @@ module Bio
 
       def to_s
         s = StringIO.new
-        s << "#{@type}, chrom=#{@chr}, start=#{@start}, stop=#{@stop}"
-        s << ", header_line=#{@header_line}" if @header_line
-        s << ", start_line=#{@line_start}" if @line_start
-        s << ", stop_line=#{@line_stop}" if @line_stop
+        s << "#{@type} chrom=#{@chr}"
+        s << " start=#{@start}" if @start and fixed_step?
+        s << " step=#{@step}" if @step and fixed_step?
+        s << " span=#{@span}" if @span
         return s.string
       end
     end
@@ -349,7 +300,7 @@ module Bio
         
         # Store the chunk of values in the Contig
         chunk.each_with_index do |value,i|
-          next if value == 'n/a' or value == 'nan'
+          next if value == 'n/a' or value == 'NaN'
           contig.set(query_start+i, value.to_f)
         end
         
@@ -378,7 +329,7 @@ module Bio
       BigWig.to_bedgraph(@data_file, output_file)
     end
     
-    # Write a BigWigFile to a Wig file
+    # Convert a BigWigFile to a Wig file
     def self.to_wig(input_file, output_file)
       puts "Converting BigWig file (#{File.basename(input_file)}) to Wig (#{File.basename(output_file)})" if ENV['DEBUG']
       
@@ -405,7 +356,7 @@ module Bio
       end
     end
 
-    # Write this BigWig to a BedGraph
+    # Convert a BigWig to a BedGraph
     def self.to_bedgraph(input_file, output_file)
       puts "Converting BigWig file (#{File.basename(input_file)}) to BedGraph (#{File.basename(output_file)})" if ENV['DEBUG']
       UCSC.bigwig_to_bedgraph(input_file, output_file)
@@ -498,7 +449,7 @@ module Bio
       # Now find the start and stop of each Contig
       @contigs_index.each do |contig_info|
         # fixedStep lines give the start, so we just need to find the stop
-        if contig_info.type == ContigInfo::FIXED_STEP
+        if contig_info.fixed_step?
           # Get the line number of the next contig in the file
           next_contig_line = @contigs_index.select { |info| info.header_line > contig_info.header_line }.collect { |info| info.header_line }.sort.first
           
@@ -512,7 +463,7 @@ module Bio
           end
           
           last_line = String.new
-          while last_line.nil? or last_line.chomp.empty?
+          while last_line.nil? or last_line.strip.empty?
             offset += 1
             last_line = File.lines(@data_file, next_contig_line-offset, next_contig_line-offset)
           end
@@ -557,21 +508,22 @@ module Bio
     # QUERY METHODS
     ##
     
-    # Return single-bp data from the specified region
+    # Return a Contig of single-bp data from the specified region
     def query(chr, start = nil, stop = nil)
       start = chr_start(chr) if start.nil?
       stop = chr_stop(chr) if stop.nil?
       raise WigError, "Chromosome #{chr} not found in Wig file #{@data_file}!" unless include?(chr, start, stop)
       
+      relev_contigs = @contigs_index.select { |info| info.chr == chr and (info.stop >= start and info.start <= stop) }.sort_by { |info| info.start }
       output = Genomics::Contig.new(chr)
       
       # Find the relevant contigs for the requested interval
-      @contigs_index.select { |info| info.chr == chr and (info.stop >= start and info.start <= stop) }.sort_by { |info| info.start }.each do |info|
-        # Clamp to bases that are covered by this Contig
-        low = [start, info.start].max
-        high = [stop, info.stop].min
-        
-        if info.type == ContigInfo::FIXED_STEP
+      relev_contigs.each do |info|        
+        if info.fixed_step?
+          # Clamp to bases that are covered by this Contig
+          low = [start, info.start].max
+          high = [stop, info.stop].min
+          
           # Figure out what lines in the file we need to get those bases
           start_line = info.line_for_bp(low)
           stop_line = info.line_for_bp(high)
@@ -580,7 +532,7 @@ module Bio
           bp = info.bp_for_line(start_line)
           File.lines(@data_file, start_line, stop_line) do |line|
             value = line.to_f
-            (bp..bp+info.span-1).each { |base| output.set(base, value) if low <= base and base <= high }
+            (bp...bp+info.span).each { |base| output.set(base, value) if base >= start and base <= stop }
             bp += info.step
           end
         else
@@ -588,16 +540,14 @@ module Bio
           # so iterate through them all until we find what we want
           File.lines(@data_file, info.line_start, info.line_stop) do |line|
             entry = line.split("\t")
-            start_base = entry.first.to_i
+            bp = entry.first.to_i
+            # Skip until we've found the base we're interested in
+            next if bp+info.span-1 < start
+            # Quit if we've reached our last base
+            break if bp > stop
+            
             value = entry.last.to_f
-            stop_base = [start_base+info.span-1, high].min
-            
-            if start_base >= low
-              (start_base..stop_base).each { |base| output.set(base, value) }
-            end
-            
-            # Don't need to go further in the Contig if we've reached our last base
-            break if stop_base == high
+            (bp...bp+info.span).each { |base| output.set(base, value) if base >= start and base <= stop }
           end
         end
       end

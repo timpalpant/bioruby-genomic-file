@@ -1,6 +1,6 @@
 #
 #  tabix.rb
-#  ruby-genomics
+#  bioruby-genomic-file
 #  Wrapper for the tabix and bgzip executables
 #
 #  Created by Timothy Palpant on 5/30/11.

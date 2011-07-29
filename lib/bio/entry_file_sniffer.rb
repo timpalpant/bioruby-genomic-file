@@ -1,6 +1,6 @@
 #
 #  entry_file_sniffer.rb
-#  ruby-genomics
+#  bioruby-genomic-file
 #
 #  Attempt to autodetect entry file types
 #
@@ -111,7 +111,7 @@ module Bio
     def first_line
       if not defined? @first_line
         File.foreach(@data_file) do |line|
-          @first_line = line
+          @first_line = line.chomp
           
           # Break as long as we don't have a header/track/comment line
           break if not @first_line.start_with?('#', '@', 'track') and not @first_line.empty?
@@ -123,10 +123,7 @@ module Bio
     
     # The number of columns in the file
     def num_columns
-      if not defined? @num_cols
-        @num_cols = first_line.split("\t").length
-      end
-      
+      @num_cols = first_line.split("\t").length if not defined? @num_cols
       return @num_cols
     end
     

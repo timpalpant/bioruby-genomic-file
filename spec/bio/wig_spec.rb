@@ -59,7 +59,6 @@ shared_examples "wig file" do
       (5..8).each { |bp| result[bp].should == bp }
       
       result = @test.query('chrXI', 25, 35)
-      result.length.should == 11
       (25..28).each { |bp| result[bp].should == 3 }
       result[29].should be_nil
       (30..33).each { |bp| result[bp].should == 4 }

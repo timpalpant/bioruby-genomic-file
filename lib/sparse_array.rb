@@ -1,6 +1,6 @@
 #
 #  sparse_array.rb
-#  ruby-genomics
+#  bioruby-genomic-file
 #
 #  Created by Timothy Palpant on 6/25/11.
 #  Copyright 2011 UNC. All rights reserved.
@@ -17,12 +17,24 @@ require 'stats'
 class SparseArray
   include Enumerable
   
-  def initialize
+  attr_accessor :span
+  
+  def initialize(span = 1)
     @data = Hash.new
+    @span = span
   end
   
   def each
-    (start..stop).each { |i| yield get(i) }
+    @data.each { |i,v| yield(i,v) }
+  end
+  
+  # Is this SparseArray contiguous? (i.e. no missing/nil values in the middle)
+  def contiguous?
+    return nil if @data.length == 0
+    (start..stop).each do |i|
+      return false if get(i).nil?
+    end
+    return true
   end
   
   ##
@@ -32,7 +44,10 @@ class SparseArray
   # Store a value for a given index
   def set(i, value)
     # Don't store nil values
-    return if value.nil?
+    if value.nil?
+      @data.delete(i)
+      return
+    end
     
     raise SparseArrayError, "Invalid key (#{i.class})! Indexes must be Integers" unless i.is_a?(Integer)
     raise SparseArrayError, "Invalid key (#{i})! Cannot set value of index < 0" if i < 0
@@ -42,7 +57,7 @@ class SparseArray
     
     # Update the cached min/max if it has changed
     @min = i if @min.nil? or i < @min
-    @max = i if @max.nil? or i > @max
+    @max = i+@span-1 if @max.nil? or i+@span-1 > @max
   end
   
   # Alias for #set
@@ -51,9 +66,15 @@ class SparseArray
   end
   
   # Get an object for an index, or return nil if we don't have data
+  # Take into account the span of values
   def get(i)
     raise SparseArrayError, "SparseArrays do not support negative indexing" if i < 0
-    @data[i]
+    
+    i.downto(i-@span+1) do |k|
+      return @data[k] if @data.include?(k)
+    end
+    
+    return nil
   end
   
   # Alias for #get
@@ -106,7 +127,7 @@ class SparseArray
   
   # Get all of the values as an Array
   def values
-    (start..stop).map { |i| get(i) }
+    @data.values
   end
   
   ##
@@ -132,7 +153,7 @@ class SparseArray
   def high
     stop
   end
-  
+    
   # The number of indices from start..stop
   def length
     stop - start + 1 unless coverage == 0
@@ -140,7 +161,7 @@ class SparseArray
   
   # Number of indices with data
   def coverage
-    @data.length
+    @data.length*@span
   end
   
   # A measure of how sparse this array is
@@ -197,7 +218,7 @@ class SparseArray
   end
 
   def sum
-    @data.values.sum
+    @data.values.sum*@span unless coverage == 0
   end
 
   # Alias for #sum
@@ -222,9 +243,10 @@ class SparseArray
   ##
   
   # Convert this SparseArray into an Array of values
-  # Alias for #values
   def to_a
-    values
+    a = Array.new(stop)
+    self.each { |i,v| a[i] = v }
+    return a
   end
   
   # Convert this SparseArray into a Hash of key-value pairs
@@ -239,7 +261,7 @@ class SparseArray
   private
 
   def binary_op(other)
-    result = SparseArray.new
+    result = self.class.new
     
     if other.is_a?(Integer) or other.is_a?(Float)
       @data.each { |i,value| result.set(i, yield(value, other)) }

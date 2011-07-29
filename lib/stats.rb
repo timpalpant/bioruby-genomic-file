@@ -66,6 +66,7 @@ module NativeStats
   end
 
   def zscore(avg = self.mean, sdev = self.stdev)
+    raise "Cannot Z-Score with standard deviation 0!" if sdev == 0
     self.map { |elem| (elem-avg)/sdev unless elem.nil? }
   end
 
@@ -78,7 +79,7 @@ module NativeStats
 
   # Given two arrays a and b, a^b returns a new array of objects *not* found in the union of both.
   def ^(other)                             
-  (self | other) - (self & other)
+    (self | other) - (self & other)
   end
 
   # Return the value of the pth percentile
@@ -156,7 +157,7 @@ module NativeStats
     i = half_window
     self.each_cons(2*half_window+1) do |window|
       for j in 0...window.length
-        smooth[i] += window[j] * gaussian[j]
+        smooth[i] += window[j] * gaussian[j] unless window[j].nil?
       end
 
       i += 1

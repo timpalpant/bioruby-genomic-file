@@ -25,7 +25,7 @@ module Bio
     end
     
     # The standard deviation of all values
-    def stdev(avg = self.mean)
+    def stdev
       compute_stats if @stdev.nil?
       return @stdev unless num_bases == 0
     end
@@ -33,6 +33,7 @@ module Bio
     private
     
     # Compute the coverage, total, and stdev in a single iteration
+    # since it is no more costly
     def compute_stats
       @num_bases = 0
       @total = 0
@@ -41,7 +42,7 @@ module Bio
       self.each_chunk do |chunk|
         @num_bases += chunk.coverage
         @total += chunk.sum
-        sum_of_squares += chunk.values.compact.map { |elem| elem**2 }.sum
+        sum_of_squares += chunk.span*chunk.values.map { |elem| elem**2 }.sum
       end
       
       @mean = @total.to_f / @num_bases
