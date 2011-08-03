@@ -37,19 +37,11 @@ shared_examples "wig file" do
   end
   
   context "when iterating" do
-    it "should iterate over all contigs" do
-      count = 0
-      @test.each { |contig| count += 1 }
-      count.should == 3
-    end
+    it "should iterate over all lines"
     
-    it "should merge fragmented contigs"
+    it "should iterate over all values"
     
-    it "should iterate over all chunks" do
-      count = 0
-      @test.each { |chunk| count += 1 }
-      count.should == 3
-    end
+    it "should iterate over all lines by default"
   end
   
   context "when querying" do
@@ -84,7 +76,7 @@ shared_examples "wig file" do
   
   context "statistics" do
     it "should have 124 bases of data" do
-      @test.num_bases.should be_within(1e-14).of(124)
+      @test.num_bases.should == 124
     end
     
     it "should have total = 952" do

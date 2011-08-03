@@ -1,10 +1,8 @@
 require 'enumerator'
 require 'stringio'
 require 'utils/unix'
-require 'utils/parallelizer'
 require 'bio/genomics/contig'
 require 'bio/genomics/assembly'
-require 'bio/wig_math'
 require 'bio/utils/ucsc'
 include Bio::Utils
 
@@ -12,7 +10,6 @@ module Bio
   # Base class for TextWigFile and BigWigFile
   class WigFile
     include Enumerable
-    include WigMath
     
     CHUNK_SIZE = 200_000
     
@@ -55,24 +52,36 @@ module Bio
       end
     end
     
-    # Iterate over the contigs in this Wig file
-    def each
-      @contigs_index.each do |contig_info|
-        yield query(contig_info.chr, contig_info.start, contig_info.stop)
-      end
+    # By default, iterate over lines in the Wig file
+    def each(&block)
+      each_line(&block)
     end
     
-    # Iterate over chunks in this Wig file
-    def each_chunk(size = CHUNK_SIZE)
-      @contigs_index.each do |contig_info|
-        chunk_start = contig_info.start
-        while chunk_start <= contig_info.stop
-          chunk_stop = [chunk_start+size-1, contig_info.stop].min
-          puts "Processing chunk #{contig_info.chr}:#{chunk_start}-#{chunk_stop}" if ENV['DEBUG']
+    # Iterate over the 'lines' in this Wig file
+    # Note that for BigWigFiles these do not correspond to actual lines
+    # (since the file is binary)
+    def each_line
+      raise "Should be overridden in subclasses!"
+    end
+    
+    # Iterate over each value in this WigFile
+    def each_value
+      info = nil
+      self.each_line do |line|
+        if line.chomp.empty? or line.start_with?('track')
+          next
+        elsif line.start_with?('fixedStep', 'variableStep')
+          info = ContigInfo.parse(line)
+        elsif line == 'n/a' or line == 'NaN'
+          yield nil
+        else
+          value = if info.fixed_step?
+            Float(line)
+          else
+            Float(line.split("\t").last)
+          end
           
-          yield query(contig_info.chr, chunk_start, chunk_stop)
-
-          chunk_start = chunk_stop + 1
+          info.span.times { yield value }
         end
       end
     end
@@ -127,6 +136,34 @@ module Bio
       to_s
     end
     
+    # Number of values in the Wig file
+    def num_bases
+      # Cache for performance
+      compute_stats if @num_bases.nil?
+      return @num_bases
+    end
+    
+    # The sum of all values
+    def total
+      # Cache for performance
+      compute_stats if @total.nil?
+      return @total
+    end
+    
+    # The mean of all values
+    def mean  
+      # Cache for performance
+      compute_stats if @mean.nil?
+      return @mean unless num_bases == 0
+    end
+    
+    # The standard deviation of all values
+    def stdev
+      compute_stats if @stdev.nil?
+      return @stdev unless num_bases == 0
+    end
+    
+    
     ##
     # ABSTRACT METHODS
     ##
@@ -146,6 +183,25 @@ module Bio
       result = @contigs_index.select { |contig_info| contig_info.chr == query_chr }
       raise WigError, "Wig does not include data for chromosome #{query_chr}" unless result.length > 0
       return result
+    end
+    
+    # Compute the coverage, total, and stdev in a single iteration
+    # since it is no more costly
+    def compute_stats
+      @num_bases = 0
+      @total = 0
+      sum_of_squares = 0.0
+      
+      self.each_value do |value|
+        next if value.nil?
+        @num_bases += 1
+        @total += value
+        sum_of_squares += value**2
+      end
+      
+      @mean = @total.to_f / @num_bases
+      variance = (sum_of_squares - @total*@mean) / @num_bases
+      @stdev = Math.sqrt(variance)
     end
     
     ##
@@ -277,6 +333,30 @@ module Bio
     ##
     # QUERY METHODS
     ##
+    
+    # Iterate over the BigWigFile as if it were a TextWigFile (by line)
+    def each_line
+      # Grab chunks at a time since it is more efficient than calling bigWigSummary for every single value
+      @contigs_index.each do |contig|
+        # Yield a header line (fixedStep) for each chromosome
+        yield contig.to_s
+        
+        # Yield all of the values for that chromosome
+        query_start = contig.start
+        while query_start < contig.stop
+          query_stop = [query_start+CHUNK_SIZE-1, contig.stop].min
+          num_values = query_stop - query_start + 1
+          begin
+            UCSC.bigwig_summary(@data_file, contig.chr, query_start, query_stop, num_values, 'mean').each { |value| yield value }
+          rescue UCSC::ToolsError
+            puts "Interval #{contig.chr}:#{query_start}-#{query_stop} has no data" if ENV['DEBUG']
+            num_values.times { yield 'n/a' }
+          ensure
+            query_start = query_stop + 1
+          end
+        end
+      end
+    end
     
     # Return a Contig of data from the specified region
     def query(chr, start = nil, stop = nil, type = 'mean')
@@ -447,7 +527,9 @@ module Bio
       end
       
       # Now find the start and stop of each Contig
+      puts 'Cataloging Contig start/stops' if ENV['DEBUG']
       @contigs_index.each do |contig_info|
+        puts "\t#{contig_info}" if ENV['DEBUG']
         # fixedStep lines give the start, so we just need to find the stop
         if contig_info.fixed_step?
           # Get the line number of the next contig in the file
@@ -507,6 +589,17 @@ module Bio
     ##
     # QUERY METHODS
     ##
+    
+    # Iterate over each line in the WigFile
+    def each_line
+      File.foreach(@data_file) { |line| yield line }
+    end
+    
+    # Override each_chunk to move through the file in a single pass for efficiency
+    # rather than querying randomly throughout the file (which greatly increases seek time)
+    def each_chunk
+      
+    end
     
     # Return a Contig of single-bp data from the specified region
     def query(chr, start = nil, stop = nil)
