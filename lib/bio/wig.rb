@@ -446,13 +446,14 @@ module Bio
           current_line = start_line
           bp = info.bp_for_line(current_line)
           while current_line <= stop_line
-            value = Float(@f.gets)
+            line = @f.gets
+            value = Float(line)
             (bp...bp+info.span).each { |base| output.set(base, value) if base >= start and base <= stop }
             bp += info.step
             current_line += 1
           end
         else
-          while ((line = @f.gets.chomp) and @f.pos < info.pos_stop)
+          while ((line = @f.gets) and @f.pos < info.pos_stop)
             entry = line.split("\t")
             bp = entry[0].to_i
             # Skip until we've found the base we're interested in
