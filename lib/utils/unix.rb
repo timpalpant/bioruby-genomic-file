@@ -43,9 +43,10 @@ class File
   #
   # Adapted from ptools gem, and fixed to also count newline characters
   #
-  def self.binary?(file, threshold = 0.30)
+  def self.binary?(filename, threshold = 0.30)
+    expanded = File.expand_path(filename)
     # Get the first block of data from the file and split to characters
-    s = (File.read(file, File.stat(file).blksize) || "").split(//)
+    s = (File.read(expanded, File.stat(expanded).blksize) || "").split(//)
     # Is the proportion of non-ASCII characters greater than the threshold?
     ((s.size - s.grep(/[\s\w\b]/).size) / s.size.to_f) > threshold
   end

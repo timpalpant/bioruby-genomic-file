@@ -17,7 +17,7 @@ module Bio
       end
       
       def to_s
-        "Spot: #{@id},#{chr},#{@start},#{@stop},#{@value}"
+        "Spot: #{@id},#{@chr},#{@start},#{@stop},#{@value}"
       end
       
       def to_bed
@@ -28,7 +28,7 @@ module Bio
       
       def to_bedgraph
         bedgraph = StringIO.new
-        bedgraph << "#{chr}\t#{low-1}\t#{high}"
+        bedgraph << "#{@chr}\t#{low-1}\t#{high}"
         bedgraph << "\t#{@value}" if @value    
         bedgraph.string
       end

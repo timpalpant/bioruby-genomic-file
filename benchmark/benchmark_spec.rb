@@ -1,3 +1,0 @@
-require 'bio-genomic-file'
-
-

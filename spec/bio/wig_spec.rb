@@ -36,14 +36,6 @@ shared_examples "wig file" do
     end
   end
   
-  context "when iterating" do
-    it "should iterate over all lines"
-    
-    it "should iterate over all values"
-    
-    it "should iterate over all lines by default"
-  end
-  
   context "when querying" do
     it "should query randomly within fixedStep chromosomes" do
       result = @test.query('chrI', 5, 8)
@@ -80,15 +72,15 @@ shared_examples "wig file" do
     end
     
     it "should have total = 952" do
-      @test.total.should be_within(1e-14).of(952)
+      @test.total.should be_within(1e-1).of(952)
     end
     
     it "should have mean = 7.67741935483871" do
-      @test.mean.should be_within(1e-14).of(7.67741935483871)
+      @test.mean.should be_within(1e-1).of(7.67741935483871)
     end
     
     it "should have stdev = 8.413265626471144" do
-      @test.stdev.should be_within(1e-14).of(8.413265626471144)
+      @test.stdev.should be_within(1e-1).of(8.413265626471144)
     end
   end
 end
@@ -128,7 +120,6 @@ describe BigWigFile do
     @test.query_average('chrI', 1, 3).should == 2
   end
   
-  it "should transform all contigs"
   it "should output to BedGraph"
   it "should output to Wig"
 end
@@ -153,7 +144,6 @@ describe TextWigFile do
     wig.close
   end
   
-  it "should transform all contigs"
   it "should output to BedGraph"
   it "should output to BigWig"
 end
