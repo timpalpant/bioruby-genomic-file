@@ -10,6 +10,7 @@ module Bio
   class WigFile
     CHUNK_SIZE = 200_000
     KEY_GRANULARITY = 10_000
+    INDEX_EXTENSION = '.widx'
     
     attr_reader :track_header, :data_file, :num_bases, :total, :mean, :stdev
     
@@ -453,7 +454,10 @@ module Bio
             current_line += 1
           end
         else
-          while ((line = @f.gets) and @f.pos < info.pos_stop)
+          while (line = @f.gets.chomp)
+            # Break if at the end of a Contig
+            break if line.empty? or line.start_with?('fixedStep', 'variableStep')
+            
             entry = line.split("\t")
             bp = entry[0].to_i
             # Skip until we've found the base we're interested in
@@ -513,79 +517,81 @@ module Bio
       @contigs_index = Array.new
       @f.rewind
       line_num = 0
-      while (line = @f.gets)
+      num_contigs = 0
+      bp = 0
+      info = ContigInfo.new
+      until @f.eof?
+        if num_contigs > 0 and (line_num+1 - info.line_start) % KEY_GRANULARITY == 0
+          cursor = @f.pos
+        end
+        line = @f.gets.chomp
         line_num += 1
         
-        if line.start_with?('fixedStep', 'variableStep')
+        # Track lines / blank lines
+        if line.empty? or line.start_with?('track')
+          next
+        # Contig header lines
+        elsif line.start_with?('fixedStep', 'variableStep')
+          # If this signals the end of the previous Contig, store it
+          if num_contigs > 0
+            puts "...storing contig in the global index" if ENV['DEBUG']
+            info.line_stop = line_num - 1
+            info.pos_stop = @f.pos
+            info.stop = bp + info.span - 1
+            @contigs_index << info
+          end
+          
           info = ContigInfo.parse(line)
+          num_contigs += 1
+          puts info.to_s if ENV['DEBUG']
           
           # Read until we find the first data value (there could, but shouldn't, be intervening whitespace)
+          puts "...finding first data value" if ENV['DEBUG']
           line.clear
-          while line.chomp.empty?
+          while line.empty?
             cursor = @f.pos
-            line = @f.gets
+            line = @f.gets.chomp
             line_num += 1
           end
           info.line_start = line_num
           info.pos_start = cursor
+          # Move back one line so the first data line will be processed
+          # on the next iteration
+          @f.seek(cursor)
+          line_num -= 1
           info.start = line.split("\t").first.to_i if info.variable_step?
           
-          # Read until we get to the next contig / whitespace / EOF
           bp = info.start - info.step
-          until @f.eof? or line.chomp.empty? or line.start_with?('fixedStep', 'variableStep')
-            # Compute stats since we're going through all of the data anyway
-            if info.fixed_step?
-              bp += info.step
-              value = Float(line)
-            else
-              entry = line.split("\t")
-              bp = entry[0].to_i
-              value = Float(entry[1])
-            end
-            
-            @num_bases += info.span
-            @total += info.span * value
-            sum_of_squares += info.span * value**2
-            
-            # Store the position of this line
-            info.index[bp] = cursor if (line_num-info.line_start) % KEY_GRANULARITY == 0
-            prev_cursor = cursor
-            cursor = @f.pos
-            line = @f.gets
-            line_num += 1
-          end
-          
-          # Move back one line (to the last line with data) unless EOF
-          if @f.eof?
-            value = if info.fixed_step?
-              Float(line.chomp)
-            else
-              Float(line.chomp.split("\t").last)
-            end
-            
-            @num_bases += info.span
-            @total += info.span * value
-            sum_of_squares += info.span * value**2
-          else
-            @f.seek(prev_cursor)
-            line = @f.gets
-            line_num -= 1
-          end
-          
-          info.line_stop = line_num
-          info.pos_stop = @f.pos
+          puts "...indexing and computing descriptive statistics" if ENV['DEBUG']
+        # Data lines
+        else
+          # Compute stats since we're going through all of the data anyway
           if info.fixed_step?
-            # Calculate the stop based on the number of values and the step/span sizes
-            num_values = info.step*(info.line_stop-info.line_start) + info.span - 1
-            info.stop = info.start + num_values
+            bp += info.step
+            value = Float(line)
           else
-            # Use the last variableStep line to get the stop
-            info.stop = line.split("\t").first.to_i + info.span - 1
+            entry = line.split("\t")
+            bp = entry[0].to_i
+            value = Float(entry[1])
           end
           
-          @contigs_index << info
+          @num_bases += info.span
+          @total += info.span * value
+          sum_of_squares += info.span * value**2
+          
+          # Store the position of this line
+          if (line_num-info.line_start) % KEY_GRANULARITY == 0
+            info.index[bp] = cursor
+          end
         end
       end
+      
+      # Store the last contig
+      puts "...storing contig in the global index" if ENV['DEBUG']
+      info.line_stop = line_num
+      info.pos_stop = @f.pos
+      info.stop = bp + info.span - 1
+      @contigs_index << info
       
       @mean = @total / @num_bases
       variance = (sum_of_squares - @total*@mean) / @num_bases
