@@ -150,7 +150,11 @@ module Bio
       if b
         FileUtils.touch(@indexing)
       else
-        File.delete(@indexing) if File.exist?(@indexing)
+        begin
+          File.delete(@indexing) if File.exist?(@indexing)
+        rescue
+          puts "Error deleting indexing file" if ENV['DEBUG']
+        end
       end
     end
     

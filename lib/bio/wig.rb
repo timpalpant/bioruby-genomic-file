@@ -428,6 +428,7 @@ module Bio
       
       # Find the relevant contigs for the requested interval
       relev_contigs.each do |info|
+        puts "Loading data from contig: #{info}" if ENV['DEBUG']
         # Clamp to bases that are covered by this Contig
         low = [start, info.start].max
         high = [stop, info.stop].min
@@ -437,6 +438,7 @@ module Bio
         @f.seek(info.index[closest_indexed_bp])
         
         if info.fixed_step?
+          puts "Loading fixedStep data" if ENV['DEBUG']
           # Figure out what lines in the file we need to get those bases
           start_line = info.line_for_bp(low)
           stop_line = info.line_for_bp(high)
@@ -448,24 +450,39 @@ module Bio
           bp = info.bp_for_line(current_line)
           while current_line <= stop_line
             line = @f.gets
-            value = Float(line)
+            begin
+              value = Float(line)
+            rescue
+              puts "Error parsing Float value: #{line}"
+              value = line.to_f
+            end
             (bp...bp+info.span).each { |base| output.set(base, value) if base >= start and base <= stop }
             bp += info.step
             current_line += 1
           end
         else
+          puts "Loading variableStep data" if ENV['DEBUG']
           while (line = @f.gets.chomp)
             # Break if at the end of a Contig
             break if line.empty? or line.start_with?('fixedStep', 'variableStep')
             
             entry = line.split("\t")
+            if entry.length != 2
+              puts "Invalid variableStep line: #{line}" if ENV['DEBUG']
+              next
+            end
             bp = entry[0].to_i
             # Skip until we've found the base we're interested in
             next if bp+info.span-1 < start
             # Quit if we've gone past our last base
             break if bp > stop
 
-            value = Float(entry[1])
+            begin
+              value = Float(entry[1])
+            rescue
+              puts "Error parsing Float: #{entry[1]}"
+              value = entry[1].to_f
+            end
             (bp...bp+info.span).each { |base| output.set(base, value) if base >= start and base <= stop }
           end
         end
@@ -568,11 +585,21 @@ module Bio
           # Compute stats since we're going through all of the data anyway
           if info.fixed_step?
             bp += info.step
-            value = Float(line)
+            begin
+              value = Float(line)
+            rescue
+              puts "Error parsing Float: #{line}"
+              value = line.to_f
+            end
           else
             entry = line.split("\t")
             bp = entry[0].to_i
-            value = Float(entry[1])
+            begin
+              value = Float(entry[1])
+            rescue
+              puts "Error parsing Float: #{entry[1]}"
+              value = entry[1].to_f
+            end
           end
           
           @num_bases += info.span
