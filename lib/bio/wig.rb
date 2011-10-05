@@ -462,7 +462,9 @@ module Bio
           end
         else
           puts "Loading variableStep data" if ENV['DEBUG']
-          while (line = @f.gets.chomp)
+          while (line = @f.gets)
+            # Trim trailing newline character
+            line.chomp!
             # Break if at the end of a Contig
             break if line.empty? or line.start_with?('fixedStep', 'variableStep')
             
