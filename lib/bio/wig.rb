@@ -327,13 +327,17 @@ module Bio
       
       # Index the contigs in this ASCII Wig file
       # Attempt to load the index from disk if it has previously been indexed and saved
-      index_file = File.expand_path(@data_file+WigIndex::INDEX_EXTENSION)
-      if File.exist?(index_file)
-        @index = WigIndex.load(index_file)
-      else
+      @index_file = @data_file+WigIndex::INDEX_EXTENSION
+      is_indexed = false
+      if File.exist?(@index_file)
+        @index = WigIndex.load(@index_file)
+        is_indexed = @index.matches?(@data_file)
+      end
+      
+      if not is_indexed
         index_contigs()
         # Save the index to disk if the KEEP_INDEX environment variable is set
-        @index.to_disk(index_file) if ENV['KEEP_INDEX']
+        save_index if ENV['KEEP_INDEX']
       end
     
       # Raise an error if no chromosomes were found
@@ -343,6 +347,12 @@ module Bio
     # Cleanup operations
     def close
       @f.close
+    end
+    
+    # Manually force a save of the index
+    def save_index
+      @index.compute_digest(@data_file)
+      @index.to_disk(@index_file)
     end
     
     ##
