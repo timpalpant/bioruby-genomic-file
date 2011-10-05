@@ -3,16 +3,16 @@ require 'utils/unix'
 require 'bio/genomics/contig'
 require 'bio/genomics/assembly'
 require 'bio/utils/ucsc'
+require 'bio/wig_index'
 include Bio::Utils
 
 module Bio
   # Base class for TextWigFile and BigWigFile
   class WigFile
-    CHUNK_SIZE = 200_000
     KEY_GRANULARITY = 10_000
-    INDEX_EXTENSION = '.widx'
+    CHUNK_SIZE = 200_000
     
-    attr_reader :track_header, :data_file, :num_bases, :total, :mean, :stdev
+    attr_reader :track_header, :data_file
     
     ##
     # INSTANCE METHODS
@@ -22,7 +22,7 @@ module Bio
     def initialize(filename)
       @data_file = File.expand_path(filename)
       @track_header = UCSC::TrackHeader.new(:type => 'wiggle_0')
-      @contigs_index = Array.new
+      @index = WigIndex.new
     end
     
     # Put any cleanup operations here
@@ -53,7 +53,7 @@ module Bio
     
     # Return an array of all chromosomes in this Wig file
     def chromosomes
-      @contigs_index.collect { |contig_info| contig_info.chr }.uniq
+      @index.collect { |contig_info| contig_info.chr }.uniq
     end
     
     # Does this Wig file include data for a given locus?
@@ -77,23 +77,37 @@ module Bio
       chr_contigs(query_chr).collect { |contig_info| contig_info.stop }.max
     end
     
-    # Output a summary about this BigWigFile
-    def summary
-      str = StringIO.new
-      @contigs_index.each { |contig_info| str << "chrom=#{contig_info.chr}, start=#{contig_info.start}, stop=#{contig_info.stop}\n" }
-      str << "\nMean:\t#{mean}\n"
-      str << "Standard deviation:\t#{stdev}"
-      
-      return str.string
+    def num_bases
+      @index.num_bases
+    end
+    
+    def total
+      @index.total
+    end
+    
+    def mean
+      @index.mean
+    end
+    
+    def stdev
+      @index.stdev
+    end
+    
+    def min
+      @index.min
+    end
+    
+    def max
+      @index.max
     end
     
     def to_s
       str = StringIO.new
       str << "WigFile: #{File.basename(@data_file)}\n"
-      @contigs_index.each { |contig_info| str << "#{contig_info}\n" }
-      str << "Base pairs of data:\t#{@num_bases}\n"
-      str << "Mean:\t#{@mean}\n"
-      str << "Standard deviation:\t#{@stdev}"
+      @index.each { |contig_info| str << "#{contig_info}\n" }
+      str << "Base pairs of data:\t#{num_bases}\n"
+      str << "Mean:\t#{mean}\n"
+      str << "Standard deviation:\t#{stdev}"
       
       return str.string
     end
@@ -118,96 +132,9 @@ module Bio
     
     # Get the contigs for a chromosome
     def chr_contigs(query_chr)
-      result = @contigs_index.select { |contig_info| contig_info.chr == query_chr }
+      result = @index.select { |contig_info| contig_info.chr == query_chr }
       raise WigError, "Wig does not include data for chromosome #{query_chr}" unless result.length > 0
       return result
-    end
-    
-    ##
-    # Holds info about a Contig in a WigFile
-    ##
-    class ContigInfo
-      attr_accessor :type, :chr, :start, :stop, :step, :span, :line_start, :line_stop, :pos_start, :pos_stop, :index
-      
-      FIXED_STEP = 'fixedStep'
-      VARIABLE_STEP = 'variableStep'
-      
-      def initialize(type = FIXED_STEP, chr = 'unknown', start = 1, stop = 1, step = 1, span = 1)
-        @type = type
-        @chr = chr
-        @start = start
-        @stop = stop
-        @step = step
-        @span = span
-        @index = Hash.new
-      end
-      
-      def fixed_step?
-        @type == FIXED_STEP
-      end
-      
-      def variable_step?
-        @type == VARIABLE_STEP
-      end
-      
-      # Return which line contains data for a given base pair
-      def line_for_bp(bp)
-        raise WigError, "Cannot compute the line for a base pair with variableStep contigs" if @type == VARIABLE_STEP
-        raise WigError, "Contig does not contain data for base pair #{bp}" if bp < start or bp > stop
-        @line_start + (bp-@start)/@step
-      end
-      
-      # Return the start base pair of a given line number
-      def bp_for_line(line_num)
-        raise WigError, "Cannot compute the base pair for a line with variableStep contigs" if @type == VARIABLE_STEP
-        raise WigError, "Contig does not include line number #{line_num}" if line_num < @line_start or line_num > @line_stop
-        @start + @step * (line_num-@line_start)
-      end
-      
-      # Parse a fixedStep/variableStep line
-      def self.parse(line)
-        # Remove any leading/trailing whitespace
-        line.strip!
-        
-        # Store the type of Contig (fixedStep / variableStep)
-        info = self.new
-        if line.start_with?(FIXED_STEP)
-          info.type = FIXED_STEP
-        elsif line.start_with?(VARIABLE_STEP)
-          info.type = VARIABLE_STEP
-        else
-          raise WigError, "Not a valid fixedStep/variableStep line!"
-        end
-      
-        # Parse the other tokens
-        line.split(' ').each do |opt|
-          keypair = opt.split('=')
-          key = keypair.first
-          value = keypair.last
-          
-          case key
-            when 'chrom'
-              info.chr = value
-            when 'start'
-              info.start = value.to_i
-            when 'step'
-              info.step = value.to_i
-            when 'span'
-              info.span = value.to_i
-          end
-        end
-
-        return info
-      end
-
-      def to_s
-        s = StringIO.new
-        s << "#{@type} chrom=#{@chr}"
-        s << " start=#{@start}" if @start and fixed_step?
-        s << " step=#{@step}" if @step and fixed_step?
-        s << " span=#{@span}" if @span
-        return s.string
-      end
     end
 
     class WigError < StandardError
@@ -220,8 +147,6 @@ module Bio
   # Analogous to WigFile, but for compressed BigWigs
   ##
   class BigWigFile < WigFile  
-    attr_reader :min, :max
-
     def initialize(filename)
       super(filename)
       
@@ -231,22 +156,21 @@ module Bio
       info[7..-6].each do |line|
         entry = line.chomp.split(' ')
         
-        contig_info = ContigInfo.new
-        contig_info.chr = entry.first
+        chr = entry.first
         chr_length = entry.last.to_i
-        contig_info.start = find_start_base(contig_info.chr, chr_length)
-        contig_info.stop = find_stop_base(contig_info.chr, chr_length)
-        
-        @contigs_index << contig_info
+        start = find_start_base(chr, chr_length)
+        stop = find_stop_base(chr, chr_length)
+
+        @index << BigWigContigInfo.new(chr, start, stop)
       end
       
       # TODO: bigWigInfo doesn't calculate mean/stdev accurately enough when values are small (10^-7)
-      @num_bases = info[-5].chomp.split(':').last.to_i
-      @mean = info[-4].chomp.split(':').last.to_f
-      @total = @mean * @num_bases
-      @stdev = info[-1].chomp.split(':').last.to_f
-      @min = info[-3].chomp.split(':').last.to_f
-      @max = info[-2].chomp.split(':').last.to_f
+      @index.num_bases = info[-5].chomp.split(':').last.to_i
+      @index.mean = info[-4].chomp.split(':').last.to_f
+      @index.total = @index.mean * @index.num_bases
+      @index.stdev = info[-1].chomp.split(':').last.to_f
+      @index.min = info[-3].chomp.split(':').last.to_f
+      @index.max = info[-2].chomp.split(':').last.to_f
     end
     
     ##
@@ -402,10 +326,18 @@ module Bio
       end
       
       # Index the contigs in this ASCII Wig file
-      index_contigs()
+      # Attempt to load the index from disk if it has previously been indexed and saved
+      index_file = File.expand_path(@data_file+WigIndex::INDEX_EXTENSION)
+      if File.exist?(index_file)
+        @index = WigIndex.load(index_file)
+      else
+        index_contigs()
+        # Save the index to disk if the KEEP_INDEX environment variable is set
+        @index.to_disk(index_file) if ENV['KEEP_INDEX']
+      end
     
       # Raise an error if no chromosomes were found
-      raise WigError, "No fixedStep/variableStep headers found in Wig file!" if @contigs_index.length == 0
+      raise WigError, "No fixedStep/variableStep headers found in Wig file!" if @index.length == 0
     end
     
     # Cleanup operations
@@ -423,7 +355,7 @@ module Bio
       stop = chr_stop(chr) if stop.nil?
       raise WigError, "Interval not found in Wig file #{File.basename(@data_file)}!" unless include?(chr, start, stop)
       
-      relev_contigs = @contigs_index.select { |info| info.chr == chr and (info.stop >= start and info.start <= stop) }
+      relev_contigs = @index.select { |info| info.chr == chr and (info.stop >= start and info.start <= stop) }
       output = Genomics::Contig.new(chr)
       
       # Find the relevant contigs for the requested interval
@@ -434,8 +366,8 @@ module Bio
         high = [stop, info.stop].min
         
         # Find the closest known upstream base-pair position in the index
-        closest_indexed_bp = info.index.select { |bp,pos| bp <= low }.keys.max
-        @f.seek(info.index[closest_indexed_bp])
+        closest_indexed_bp = info.upstream_indexed_bp(low)
+        @f.seek(info.get_index(closest_indexed_bp))
         
         if info.fixed_step?
           puts "Loading fixedStep data" if ENV['DEBUG']
@@ -473,7 +405,12 @@ module Bio
               puts "Invalid variableStep line: #{line}" if ENV['DEBUG']
               next
             end
-            bp = entry[0].to_i
+            begin
+              bp = Integer(entry[0])
+            rescue
+              puts "Error parsing Integer: #{entry[0]}"
+              bp = entry[0].to_i
+            end
             # Skip until we've found the base we're interested in
             next if bp+info.span-1 < start
             # Quit if we've gone past our last base
@@ -529,16 +466,17 @@ module Bio
     def index_contigs
       puts 'Indexing Contig header lines' if ENV['DEBUG']
       
-      @num_bases = 0
-      @total = 0.0
+      num_bases = 0
+      total = 0.0
       sum_of_squares = 0.0
+      min, max = nil, nil
       
-      @contigs_index = Array.new
+      @index = WigIndex.new
       @f.rewind
       line_num = 0
       num_contigs = 0
       bp = 0
-      info = ContigInfo.new
+      info = TextWigContigInfo.new
       until @f.eof?
         if num_contigs > 0 and (line_num+1 - info.line_start) % KEY_GRANULARITY == 0
           cursor = @f.pos
@@ -557,10 +495,10 @@ module Bio
             info.line_stop = line_num - 1
             info.pos_stop = @f.pos
             info.stop = bp + info.span - 1
-            @contigs_index << info
+            @index << info
           end
           
-          info = ContigInfo.parse(line)
+          info = TextWigContigInfo.parse(line)
           num_contigs += 1
           puts info.to_s if ENV['DEBUG']
           
@@ -578,9 +516,12 @@ module Bio
           # on the next iteration
           @f.seek(cursor)
           line_num -= 1
-          info.start = line.split("\t").first.to_i if info.variable_step?
+          if info.variable_step?
+            info.start = line.split("\t").first.to_i
+          else
+            bp = info.start - info.step
+          end
           
-          bp = info.start - info.step
           puts "...indexing and computing descriptive statistics" if ENV['DEBUG']
         # Data lines
         else
@@ -595,7 +536,13 @@ module Bio
             end
           else
             entry = line.split("\t")
-            bp = entry[0].to_i
+            begin
+              bp = Integer(entry[0])
+            rescue
+              puts "Error parsing Integer: #{entry[0]}"
+              bp = entry[0].to_i
+            end
+            
             begin
               value = Float(entry[1])
             rescue
@@ -604,13 +551,15 @@ module Bio
             end
           end
           
-          @num_bases += info.span
-          @total += info.span * value
+          min = value if min.nil? or value < min
+          max = value if max.nil? or value > max
+          num_bases += info.span
+          total += info.span * value
           sum_of_squares += info.span * value**2
           
           # Store the position of this line
           if (line_num-info.line_start) % KEY_GRANULARITY == 0
-            info.index[bp] = cursor
+            info.store_index(bp, cursor)
           end
         end
       end
@@ -620,11 +569,15 @@ module Bio
       info.line_stop = line_num
       info.pos_stop = @f.pos
       info.stop = bp + info.span - 1
-      @contigs_index << info
+      @index << info
       
-      @mean = @total / @num_bases
-      variance = (sum_of_squares - @total*@mean) / @num_bases
-      @stdev = Math.sqrt(variance)
+      @index.min = min
+      @index.max = max
+      @index.num_bases = num_bases
+      @index.total = total
+      @index.mean = total / num_bases
+      variance = (sum_of_squares - total*@index.mean) / num_bases
+      @index.stdev = Math.sqrt(variance)
     end
   end
 end
