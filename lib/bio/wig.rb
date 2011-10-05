@@ -330,14 +330,19 @@ module Bio
       @index_file = @data_file+WigIndex::INDEX_EXTENSION
       is_indexed = false
       if File.exist?(@index_file)
-        @index = WigIndex.load(@index_file)
-        is_indexed = @index.matches?(@data_file)
+        puts "Attempting to load and match index from file" if ENV['DEBUG']
+        begin
+          @index = WigIndex.load(@index_file)
+          is_indexed = @index.matches?(@data_file)
+        rescue
+          puts "Error loading/matching index from file!"
+        end
       end
       
       if not is_indexed
         index_contigs()
         # Save the index to disk if the KEEP_INDEX environment variable is set
-        save_index if ENV['KEEP_INDEX']
+        save_index if ENV['KEEP_INDEXES']
       end
     
       # Raise an error if no chromosomes were found
