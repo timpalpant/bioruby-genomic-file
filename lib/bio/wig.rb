@@ -165,7 +165,7 @@ module Bio
       end
       
       # TODO: bigWigInfo doesn't calculate mean/stdev accurately enough when values are small (10^-7)
-      @index.num_bases = info[-5].chomp.split(':').last.to_i
+      @index.num_bases = info[-5].chomp.split(':').last.delete(',').to_i
       @index.mean = info[-4].chomp.split(':').last.to_f
       @index.total = @index.mean * @index.num_bases
       @index.stdev = info[-1].chomp.split(':').last.to_f
@@ -383,18 +383,22 @@ module Bio
         # Find the closest known upstream base-pair position in the index
         closest_indexed_bp = info.upstream_indexed_bp(low)
         @f.seek(info.get_index(closest_indexed_bp))
+        puts "Found closest indexed bp #{closest_indexed_bp}" if ENV['DEBUG']
         
         if info.fixed_step?
           puts "Loading fixedStep data" if ENV['DEBUG']
           # Figure out what lines in the file we need to get those bases
           start_line = info.line_for_bp(low)
           stop_line = info.line_for_bp(high)
+          puts "Need lines #{start_line}-#{stop_line}" if ENV['DEBUG']
           
           # Query the file for the lines and store them in the Contig
           current_line = info.line_for_bp(closest_indexed_bp)
+          puts "At line #{current_line}, moving #{start_line-current_line} lines forward" if ENV['DEBUG']
           (start_line - current_line).times { @f.gets }
           current_line = start_line
           bp = info.bp_for_line(current_line)
+          puts "Shifted to base pair: #{bp} on line #{current_line}" if ENV['DEBUG']
           while current_line <= stop_line
             line = @f.gets
             begin
