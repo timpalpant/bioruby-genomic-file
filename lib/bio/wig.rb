@@ -136,11 +136,10 @@ module Bio
       raise WigError, "Wig does not include data for chromosome #{query_chr}" unless result.length > 0
       return result
     end
-
-    class WigError < StandardError
-    end
   end
 
+  class WigError < StandardError
+  end
 
   ##
   # For documentation, see: http://genome.ucsc.edu/goldenPath/help/bigWig.html
