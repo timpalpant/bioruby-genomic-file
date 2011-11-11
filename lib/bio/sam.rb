@@ -165,6 +165,7 @@ module Bio
     def initialize(filename)
       # BAM index is the filename plus the extension .bai
       super(filename, filename+'.bai')
+      index() if not indexed?
     end
     
     # Count the number of alignments in a given lookup

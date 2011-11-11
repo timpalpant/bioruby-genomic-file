@@ -214,7 +214,7 @@ class SparseArray
   end
 
   def /(other)
-    binary_op(other) { |value1,value2| value1/value2 }
+    binary_op(other) { |value1,value2| value1/value2 unless value2.zero? }
   end
 
   def sum

@@ -4,7 +4,7 @@ module Bio
   class WigIndex < Array    
     INDEX_EXTENSION = '.widx'
     
-    attr_accessor :digest, :num_bases, :total, :mean, :stdev, :min, :max
+    attr_accessor :size, :digest, :num_bases, :total, :mean, :stdev, :min, :max
         
     # Load a Wig index from disk
     def self.load(filename)
@@ -22,12 +22,17 @@ module Bio
     
     # Compute the digest of the WigFile that this index corresponds to
     def compute_digest(filename)
+      @size = File.stat(File.expand_path(filename)).size
       @digest = Digest::MD5.file(File.expand_path(filename)).to_s
     end
     
     # If this index matches a WigFile (by MD5 checksum)
     def matches?(filename)
-      Digest::MD5.file(File.expand_path(filename)) == @digest
+      if ENV['MATCH_DIGESTS']
+        Digest::MD5.file(File.expand_path(filename)) == @digest
+      else
+        File.stat(File.expand_path(filename)).size == @size
+      end
     end
   end
   

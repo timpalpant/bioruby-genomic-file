@@ -247,21 +247,23 @@ class File
       File.open(output_file, 'a') { |f| f.write "\n" }
     end
   end
+
+  # Add a newline to the file in place
+  def self.newlinify!(file)
+    if not %x[ tail -n 1 #{file} ].end_with?("\n")
+      File.open(file, 'a') { |f| f.write "\n" }
+    end
+  end
   
   # Concatenate files
   def self.cat(input_files, output_file)
     raise "Less than 2 input files passed to cat!" if input_files.length < 2
 
-    temp_files = input_files[0..-2].map { |f| f+'.tmp' }
-    begin
-      # Add newlines at the end of files if they don't have them
-      input_files[0..-2].each_index { |i| File.newlinify(input_files[i], temp_files[i]) }
+    # Ensure that there are newline characters at the end of each file
+    input_files.each { |f| File.newlinify!(f) }
 
-      # Cat all of the files together
-      %x[ cat #{temp_files.join(' ')} #{input_files.last} > #{output_file} ]
-    ensure
-      temp_files.each { |f| File.delete(f) if File.exist?(f) }
-    end
+    # Cat all of the files together
+    %x[ cat #{input_files.join(' ')} > #{output_file} ]
   end
   
   # Sort files

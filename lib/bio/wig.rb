@@ -136,11 +136,10 @@ module Bio
       raise WigError, "Wig does not include data for chromosome #{query_chr}" unless result.length > 0
       return result
     end
-
-    class WigError < StandardError
-    end
   end
 
+  class WigError < StandardError
+  end
 
   ##
   # For documentation, see: http://genome.ucsc.edu/goldenPath/help/bigWig.html
@@ -330,14 +329,19 @@ module Bio
       @index_file = @data_file+WigIndex::INDEX_EXTENSION
       is_indexed = false
       if File.exist?(@index_file)
-        @index = WigIndex.load(@index_file)
-        is_indexed = @index.matches?(@data_file)
+        puts "Attempting to load and match index from file" if ENV['DEBUG']
+        begin
+          @index = WigIndex.load(@index_file)
+          is_indexed = @index.matches?(@data_file)
+        rescue
+          puts "Error loading/matching index from file!"
+        end
       end
       
       if not is_indexed
         index_contigs()
         # Save the index to disk if the KEEP_INDEX environment variable is set
-        save_index if ENV['KEEP_INDEX']
+        save_index if ENV['KEEP_INDEXES']
       end
     
       # Raise an error if no chromosomes were found
@@ -378,18 +382,22 @@ module Bio
         # Find the closest known upstream base-pair position in the index
         closest_indexed_bp = info.upstream_indexed_bp(low)
         @f.seek(info.get_index(closest_indexed_bp))
+        puts "Found closest indexed bp #{closest_indexed_bp}" if ENV['DEBUG']
         
         if info.fixed_step?
           puts "Loading fixedStep data" if ENV['DEBUG']
           # Figure out what lines in the file we need to get those bases
           start_line = info.line_for_bp(low)
           stop_line = info.line_for_bp(high)
+          puts "Need lines #{start_line}-#{stop_line}" if ENV['DEBUG']
           
           # Query the file for the lines and store them in the Contig
           current_line = info.line_for_bp(closest_indexed_bp)
+          puts "At line #{current_line}, moving #{start_line-current_line} lines forward" if ENV['DEBUG']
           (start_line - current_line).times { @f.gets }
           current_line = start_line
           bp = info.bp_for_line(current_line)
+          puts "Shifted to base pair: #{bp} on line #{current_line}" if ENV['DEBUG']
           while current_line <= stop_line
             line = @f.gets
             begin
