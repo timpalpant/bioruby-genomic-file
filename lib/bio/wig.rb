@@ -165,7 +165,7 @@ module Bio
       end
       
       # TODO: bigWigInfo doesn't calculate mean/stdev accurately enough when values are small (10^-7)
-      @index.num_bases = info[-5].chomp.split(':').last.to_i
+      @index.num_bases = info[-5].chomp.split(':').last.delete(',').to_i
       @index.mean = info[-4].chomp.split(':').last.to_f
       @index.total = @index.mean * @index.num_bases
       @index.stdev = info[-1].chomp.split(':').last.to_f

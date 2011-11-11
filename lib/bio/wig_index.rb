@@ -65,8 +65,6 @@ module Bio
   class BigWigContigInfo < ContigInfo
     def initialize(chr = 'unknown', start = 1, stop = 1)
       super(BIGWIG, chr, start, stop)
-      @start = start
-      @stop = stop
     end
     
     def to_s
